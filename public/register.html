@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Créer un compte - MoziKa</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <meta name="theme-color" content="#2196F3" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    header {
+      background: #2196F3;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 10px;
+    }
+    header h1, header a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+    main {
+      padding: 30px;
+      text-align: center;
+    }
+    form {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: all 0.5s ease-in-out;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background: #2196F3;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0f62c0;
+    }
+    .hide {
+      opacity: 0;
+      transform: scale(0.95);
+      pointer-events: none;
+    }
+    .show {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+    #registerMessage {
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-top: 15px;
+      transition: opacity 0.5s ease;
+    }
+    #stepTwoContainer {
+      margin-top: 15px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      max-width: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎵 MoziKa</h1>
+    <nav>
+      <a href="index.html">Accueil</a>
+      <a href="login.html">Se connecter</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Créer un compte</h2>
+
+    <!-- Étape 1 -->
+    <form id="stepOneForm" class="show">
+      <label for="username">Nom d'utilisateur :</label><br />
+      <input type="text" id="username" name="username" required /><br /><br />
+
+      <label for="email">Adresse e-mail :</label><br />
+      <input type="email" id="email" name="email" required /><br /><br />
+
+      <label for="password">Mot de passe (min 6 caractères) :</label><br />
+      <input type="password" id="password" name="password" required minlength="6" /><br /><br />
+
+      <button type="submit">📩 Recevoir le code</button>
+    </form>
+
+    <!-- Étape 2 -->
+    <section id="stepTwoContainer" class="hide">
+      <h3 style="margin-bottom:10px;">🔐 Étape 2 : Saisie du code</h3>
+      <form id="stepTwoForm">
+        <label for="emailCode">Code reçu par e-mail :</label><br />
+        <input type="text" id="emailCode" placeholder="Ex: 482913" required /><br /><br />
+        <button type="submit">✅ Valider et créer le compte</button>
+      </form>
+    </section>
+
+    <p id="registerMessage"></p>
+  </main>
+
+  <script>
+    let pendingUser = {};
+
+    // Étape 1 → Envoi
+    document.getElementById("stepOneForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      if (password.length < 6) {
+        const msg = document.getElementById("registerMessage");
+        msg.textContent = "❌ Le mot de passe doit contenir au moins 6 caractères.";
+        msg.style.color = "red";
+        return;
+      }
+
+      pendingUser = { username, email, password };
+
+      const res = await fetch("/api/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pendingUser)
+      });
+
+      const data = await res.json();
+      const msg = document.getElementById("registerMessage");
+      msg.innerHTML = data.status === "success"
+        ? `✅ Code envoyé à <strong>${email}</strong> !`
+        : `❌ ${data.message}`;
+      msg.style.color = data.status === "success" ? "green" : "red";
+      msg.style.opacity = 1;
+
+      if (data.status === "success") {
+        document.getElementById("stepOneForm").classList.add("hide");
+        document.getElementById("stepOneForm").classList.remove("show");
+        document.getElementById("stepTwoContainer").classList.add("show");
+        document.getElementById("stepTwoContainer").classList.remove("hide");
+      }
+    });
+
+    // Étape 2 → Vérification
+    document.getElementById("stepTwoForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = document.getElementById("emailCode").value;
+
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...pendingUser, code })
+      });
+
+      const data = await res.json();
+      const msg = document.getElementById("registerMessage");
+      msg.textContent = data.message;
+      msg.style.color = data.status === "success" ? "green" : "red";
+
+      if (data.status === "success") {
+        // ➕ Sauvegarde des infos pour session
+        localStorage.setItem("moziKaUser", JSON.stringify(pendingUser));
+
+        setTimeout(() => {
+          window.location.href = "accueil.html";
+        }, 1500);
+      }
+    });
+  </script>
+</body>
+</html>

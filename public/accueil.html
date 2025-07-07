@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Accueil - MoziKa</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f9fc;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 140px;
+    }
+    header {
+      background: #4a90e2;
+      padding: 20px 40px;
+      color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    nav {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    nav a:hover { color: #cce4ff; }
+    main {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #222;
+    }
+    #searchBar {
+      margin: 0 auto 30px auto;
+      max-width: 600px;
+      display: flex;
+      justify-content: center;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    ul#musicList {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    ul#musicList li {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    img.cover {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    strong {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+      color: #4a90e2;
+    }
+    small {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    audio {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    a.download-link, button.favBtn {
+      background: #4a90e2;
+      color: white;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background 0.3s ease;
+      border: none;
+      cursor: pointer;
+      margin-top: 6px;
+      display: inline-block;
+    }
+    a.download-link:hover, button.favBtn:hover { background: #357abd; }
+    .counters {
+      font-style: italic;
+      color: #555;
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+    #topFixed {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #f7f9fc;
+      border-top: 1px solid #ccc;
+      padding: 10px 20px;
+      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+    }
+    #topFixed h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      color: #4a90e2;
+    }
+    #topFixed ul {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      padding: 0;
+      list-style: none;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    #topFixed ul li {
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    #topFixed a {
+      background: #4a90e2;
+      color: white;
+      padding: 8px 14px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    #topFixed a:hover {
+      background: #357abd;
+    }
+    footer {
+      background: #121212;
+      color: #ddd;
+      padding: 30px 20px 15px;
+      font-size: 0.95rem;
+    }
+    .footer-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 30px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .footer-item {
+      flex: 1;
+      min-width: 220px;
+    }
+    .footer-item h4 {
+      font-size: 1.1rem;
+      color: #4a90e2;
+      margin-bottom: 10px;
+    }
+    .footer-item p {
+      margin: 6px 0;
+      line-height: 1.4;
+    }
+    .footer-item span {
+      font-weight: bold;
+      margin-right: 6px;
+    }
+    .footer-item a {
+      color: #bbb;
+      text-decoration: none;
+    }
+    .footer-item a:hover {
+      color: #4a90e2;
+      text-decoration: underline;
+    }
+    .footer-bottom {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.85rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎵 MoziKa</h1>
+    <nav>
+      <a href="upload.html">Uploader une musique</a>
+      <a href="profil.html">👤 Mon profil</a>
+      <a href="top.html">🏆 Top Musiques</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Liste des musiques disponibles</h2>
+    <div id="searchBar">
+      <input type="text" id="searchInput" placeholder="🔍 Rechercher par titre..." />
+    </div>
+    <ul id="musicList"><li>Chargement...</li></ul>
+  </main>
+
+  <div id="topFixed">
+    <section>
+      <h3>🏆 Top 5 des musiques les plus écoutées</h3>
+      <ul id="topList"></ul>
+      <div style="text-align: center;">
+        <a href="top.html">🏆 Voir les musiques les plus écoutées</a>
+      </div>
+    </section>
+  </div>
+
+<!-- ✅ Footer Moderne -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-item">
+        <h4>📞 Contact</h4>
+        <p><span>Numéro :</span> <a href="tel:+261344529475">+261344529475</a></p>
+        <p><span>Email :</span> <a href="mailto:contact@mozika.mg">contact-mozika@gmail.com</a></p>
+      </div>
+      <div class="footer-item">
+        <h4>🌐 Réseaux sociaux</h4>
+        <p><a href="https://facebook.com/mozika" target="_blank">🔵 Facebook</a></p>
+        <p><a href="https://instagram.com/mozika" target="_blank">📸 Instagram</a></p>
+      </div>
+      <div class="footer-item">
+        <h4>🎶 À propos</h4>
+        <p>MoziKa est la plateforme musicale 100% malagasy pour partager, découvrir, et vibrer ensemble 💙</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 MoziKa — Tous droits réservés</p>
+    </div>
+  </footer>
+  <!-- ✅ Script corrigé -->
+<script>
+  let allMusics = [];
+
+  async function fetchMusics() {
+    try {
+      const response = await fetch('/api/musics');
+      const result = await response.json();
+      allMusics = result.musics || [];
+      allMusics.sort((a, b) => (b.listenCount || 0) - (a.listenCount || 0));
+      renderMusics(allMusics);
+    } catch (err) {
+      document.getElementById("musicList").innerHTML = `<li>Erreur : ${err.message}</li>`;
+    }
+  }
+
+  function renderMusics(list) {
+    const ul = document.getElementById("musicList");
+    ul.innerHTML = "";
+
+    list.forEach(music => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <img class="cover" src="${music.cover}" alt="Couverture" />
+        <strong>${music.title}</strong>
+        <small>Par ${music.uploader_name || 'Utilisateur inconnu'}</small>
+        <div class="meta">🎵 Genre : ${music.category} • 📅 Ajoutée le ${music.uploadedAt?.split("T")[0]}</div>
+        <audio controls controlsList="nodownload" src="${music.path}" data-path="${music.path}"></audio>
+        <a class="download-link" href="${music.path}" download data-path="${music.path}">Télécharger</a>
+        <button class="favBtn" data-path="${music.path}">💙 Ajouter aux favoris</button>
+        <div class="counters">
+          Écoute : <span class="listenCount">${music.listenCount || 0}</span> fois —
+          Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
+        </div>
+      `;
+      ul.appendChild(li);
+    });
+
+    const allAudios = ul.querySelectorAll("audio");
+    allAudios.forEach(current => {
+      let listenTimer = null;
+
+      current.addEventListener("play", () => {
+        allAudios.forEach(other => {
+          if (other !== current) {
+            other.pause();
+            other.dataset.listened = "false";
+          }
+        });
+
+        listenTimer = setTimeout(() => {
+          console.log("⏱ 15 secondes de lecture — envoi écoute");
+
+          if (!current.dataset.listened) {
+            const path = current.dataset.path;
+            fetch("/api/listen", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ path })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === "success") {
+                current.dataset.listened = "true";
+                const counter = current.closest("li").querySelector(".listenCount");
+                if (counter) counter.textContent = data.count;
+              }
+            })
+            .catch(err => {
+              console.error("Erreur écoute :", err);
+            });
+          }
+        }, 15000);
+      });
+
+      current.addEventListener("pause", () => clearTimeout(listenTimer));
+      current.addEventListener("ended", () => clearTimeout(listenTimer));
+    });
+
+    const allDownloads = ul.querySelectorAll(".download-link");
+    allDownloads.forEach(link => {
+      link.addEventListener("click", () => {
+        const path = link.dataset.path;
+        fetch("/api/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            const counter = link.closest("li").querySelector(".downloadCount");
+            if (counter) counter.textContent = data.count;
+          }
+        })
+        .catch(err => {
+          console.error("Erreur téléchargement :", err);
+        });
+      });
+    });
+  }
+
+  document.getElementById("searchInput").addEventListener("input", e => {
+    const query = e.target.value.trim().toLowerCase();
+    const filtered = allMusics.filter(m => m.title.toLowerCase().includes(query));
+    renderMusics(filtered);
+  });
+
+  document.addEventListener("click", function (e) {
+    if (e.target.classList.contains("favBtn")) {
+      const musicPath = e.target.dataset.path;
+      fetch("/api/add-favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: musicPath })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          e.target.textContent = "💙 Ajouté";
+          e.target.disabled = true;
+        }
+      })
+      .catch(err => {
+        console.error("Erreur ajout favori :", err);
+      });
+    }
+  });
+
+  fetch("/api/top")
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("topList");
+      if (!data.top || data.top.length === 0) {
+        list.innerHTML = "<li>Aucune musique populaire trouvée.</li>";
+        return;
+      }
+
+      list.innerHTML = data.top.map(m => 
+        `<li>${m.title} – ${m.listenCount || 0} écoutes</li>`
+      ).join("");
+    });
+
+  fetchMusics();
+</script>
+
+</body>
+</html>

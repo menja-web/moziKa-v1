@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Réinitialisation du mot de passe</title>
+  <style>
+    body {
+      font-family: 'Segoe UI';
+      background: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    h2 {
+      text-align: center;
+      color: #4a90e2;
+      margin-bottom: 20px;
+    }
+    input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background: #4a90e2;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      width: 100%;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #357abd; }
+  </style>
+</head>
+<body>
+  <form onsubmit="handleReset(event)">
+    <h2>🔐 Mot de passe oublié</h2>
+    <input type="email" id="email" required placeholder="Votre adresse e-mail" />
+    <button type="submit">Recevoir le lien</button>
+    <p id="message" style="margin-top: 10px; text-align: center;"></p>
+  </form>
+
+  <script>
+    async function handleReset(e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const message = document.getElementById("message");
+
+      try {
+        const res = await fetch("/api/reset-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+          message.textContent = "✅ Un lien a été envoyé à votre adresse.";
+          message.style.color = "green";
+        } else {
+          message.textContent = "❌ Adresse inconnue.";
+          message.style.color = "red";
+        }
+      } catch (err) {
+        message.textContent = "❌ Erreur serveur.";
+        message.style.color = "red";
+      }
+    }
+  </script>
+</body>
+</html>

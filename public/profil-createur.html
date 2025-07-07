@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profil Artiste — MoziKa</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f3fa;
+    }
+
+    .banner {
+      height: 280px;
+      background: linear-gradient(to right, #4a90e2cc, #83b3f5cc);
+      background-size: cover;
+      background-position: center;
+      color: white;
+      display: flex;
+      align-items: flex-end;
+      padding: 30px;
+      position: relative;
+    }
+
+    .avatar {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid white;
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.4);
+      position: absolute;
+      bottom: -75px;
+      left: 40px;
+      background-color: white;
+    }
+
+    .title-section {
+      margin-left: 210px;
+      margin-bottom: 20px;
+    }
+
+    .username {
+      font-size: 36px;
+      font-weight: bold;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .badge {
+      background: white;
+      color: #4a90e2;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 4px 12px;
+      border-radius: 12px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    .content {
+      max-width: 800px;
+      margin: 120px auto 40px auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      padding: 30px;
+      text-align: center;
+    }
+
+    .info {
+      font-size: 16px;
+      color: #444;
+      margin: 8px 0;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-evenly;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .stat {
+      background: #f1f5fc;
+      padding: 16px 20px;
+      border-radius: 10px;
+      width: 180px;
+      margin: 10px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #777;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .edit-btn {
+      margin-top: 25px;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .edit-btn:hover {
+      background: #357abd;
+    }
+
+    .error {
+      margin-top: 12px;
+      color: red;
+      font-weight: bold;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .title-section {
+        margin-left: 0;
+        text-align: center;
+        margin-top: 160px;
+      }
+
+      .avatar {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .stats {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner" id="banner">
+    <img src="" alt="Photo artiste" class="avatar" id="photo" />
+    <div class="title-section">
+      <div class="username" id="username">Nom de l’artiste</div>
+      <span class="badge" id="badge">✔︎ Vérifié</span>
+    </div>
+  </div>
+
+  <div class="content" id="profil">
+    <p class="info" id="email"></p>
+    <p class="info" id="cin"></p>
+    <p class="info" id="phone"></p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">🎧 Streams</div>
+        <div class="stat-value" id="streams">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">💰 Royalties (€)</div>
+        <div class="stat-value" id="royalties">—</div>
+      </div>
+    </div>
+
+    <button class="edit-btn" onclick="document.getElementById('fileInput').click()">Changer la photo</button>
+    <input type="file" id="fileInput" accept="image/*" />
+    <p class="error" id="error"></p>
+  </div>
+
+  <script>
+    (async () => {
+      const username = new URLSearchParams(location.search).get("user");
+      const errorMsg = document.getElementById("error");
+
+      try {
+        const res = await fetch("/api/createurs");
+        const data = await res.json();
+        const user = data.find(c => c.username === username);
+
+        if (!user) {
+          errorMsg.textContent = "❌ Créateur introuvable.";
+          return;
+        }
+
+        document.getElementById("photo").src = user.photo || "./faces/default.jpg";
+        document.getElementById("username").textContent = user.username;
+        document.getElementById("badge").style.display = user.verified ? "inline-block" : "none";
+        document.getElementById("email").textContent = "📧 Email : " + user.email;
+        document.getElementById("cin").textContent = "🆔 CIN : " + user.cin;
+        document.getElementById("phone").textContent = "📞 Téléphone : " + user.phone;
+        document.getElementById("streams").textContent = user.streams;
+        document.getElementById("royalties").textContent = user.royalties + " €";
+        document.getElementById("banner").style.background = `
+          linear-gradient(to right, #4a90e2cc, #83b3f5cc),
+          url('${user.photo}')
+        `;
+        document.getElementById("banner").style.backgroundSize = "cover";
+        document.getElementById("banner").style.backgroundPosition = "center";
+        errorMsg.textContent = "";
+
+        // Upload photo
+        document.getElementById("fileInput").addEventListener("change", async () => {
+          const file = fileInput.files[0];
+          if (!file) return;
+
+          const formData = new FormData();
+          formData.append("photo", file);
+          formData.append("username", username);
+
+          try {
+            const res = await fetch("/api/update-photo", {
+              method: "POST",
+              body: formData
+            });
+
+            const result = await res.json();
+
+            if (result.success) {
+              document.getElementById("photo").src = result.newPath;
+              document.getElementById("banner").style.background = `
+                linear-gradient(to right, #4a90e2cc, #83b3f5cc),
+                url('${result.newPath}')
+              `;
+              document.getElementById("banner").style.backgroundSize = "cover";
+              document.getElementById("banner").style.backgroundPosition = "center";
+              errorMsg.textContent = "";
+            } else {
+              errorMsg.textContent = "❌ Erreur lors du chargement de la nouvelle photo.";
+            }
+          } catch (err) {
+            console.error("Erreur upload photo :", err);
+            errorMsg.textContent = "❌ Une erreur s'est produite lors de l'envoi.";
+          }
+        });
+      } catch (err) {
+        console.error("Erreur profil-createur.js :", err);
+        errorMsg.textContent = "❌ Une erreur s'est produite.";
+      }
+    })();
+  </script>
+</body>
+</html>

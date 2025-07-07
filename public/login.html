@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - MoziKa</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>🎵 MoziKa</h1>
+    <nav>
+      <a href="index.html">Accueil</a>
+      <a href="register.html">Créer un compte</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Se connecter</h2>
+    <form id="loginForm">
+      <label for="email">Adresse e-mail :</label><br>
+      <input type="email" id="email" required><br><br>
+
+      <label for="password">Mot de passe :</label><br>
+      <input type="password" id="password" required><br><br>
+
+      <button type="submit">Connexion</button>
+    </form>
+    <p id="loginMessage"></p>
+    <p style="margin-top: 10px; text-align: center;">
+  <a href="reset.html" style="color: #4a90e2; text-decoration: underline;">
+    🔑 Mot de passe oublié ?
+  </a>
+</p>
+
+  </main>
+
+  <!-- ✅ Ne garde que login.js pour éviter les conflits -->
+  <script src="js/login.js"></script>
+</body>
+</html>

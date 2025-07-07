@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Uploader une musique - MoziKa</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fc;
+      padding: 40px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #4a90e2;
+      margin-bottom: 30px;
+    }
+
+    form {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select,
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #4a90e2;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #357abd;
+    }
+
+    .nav {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .nav a {
+      background-color: #4a90e2;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: bold;
+    }
+
+    .nav a:hover {
+      background-color: #357abd;
+    }
+
+    #uploadMessage {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-top: 20px;
+      transition: opacity 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>📤 Uploader une musique</h1>
+
+  <div class="nav">
+    <a href="accueil.html">Accueil</a>
+  </div>
+
+  <form id="uploadForm" action="/api/upload" method="POST" enctype="multipart/form-data">
+    <label for="title">Titre de la musique</label>
+    <input type="text" name="title" id="title" required />
+
+    <label for="uploader_email">Votre email (auto-détecté)</label>
+    <input type="email" name="uploader_email" id="uploader_email" disabled />
+
+    <label for="category">Catégorie musicale</label>
+    <select name="category" id="category" required>
+      <option value="">-- Choisir un genre --</option>
+      <option value="Rap">Rap</option>
+      <option value="Pop">Pop</option>
+      <option value="Rock">Rock</option>
+      <option value="Jazz">Jazz</option>
+      <option value="Classique">Classique</option>
+      <option value="Instrumental">Instrumental</option>
+      <option value="Gospel">Gospel</option>
+      <option value="Autre">Autre</option>
+    </select>
+
+    <label for="musicFile">Fichier audio (.mp3)</label>
+    <input type="file" name="musicFile" id="musicFile" accept=".mp3" required />
+
+    <label for="coverFile">Image de couverture</label>
+    <input type="file" name="coverFile" id="coverFile" accept=".jpg,.jpeg,.png" required />
+
+    <button type="submit">Envoyer</button>
+    <p id="uploadMessage"></p>
+  </form>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("moziKaUser"));
+    if (user) {
+      document.getElementById("uploader_email").value = user.email;
+    }
+
+    const form = document.getElementById("uploadForm");
+    const msg = document.getElementById("uploadMessage");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+      const formData = new FormData(form);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      msg.textContent = data.message;
+      msg.style.color = data.status === "success" ? "green" : "red";
+
+      if (data.status === "success") {
+        setTimeout(() => {
+          window.location.href = "accueil.html";
+        }, 2000);
+      }
+    });
+  </script>
+  <script>
+  fetch("/api/user-email")
+    .then(res => res.json())
+    .then(data => {
+      document.querySelector("input[name='email']").value = data.email || "";
+    })
+    .catch(err => {
+      console.error("Erreur chargement email :", err);
+    });
+</script>
+
+</body>
+</html>

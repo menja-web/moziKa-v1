@@ -1,0 +1,40 @@
+[
+  {
+    "username": "admin",
+    "email": "admin@example.com",
+    "password": "$2b$10$testmotdepassetesthashtesthash",
+    "joinedAt": "2025-07-06T14:00:00.000Z"
+  },
+  {
+    "username": "faliana",
+    "email": "menjaniainarandriamaharitra@gmail.com",
+    "password": "$2b$10$QLFx/hJ4w7Wpoc4mMo7LCO.N5rm0YnUsmJ1fWL3yhw4wNEi450Tzy",
+    "joinedAt": "2025-07-06T12:01:56.659Z",
+    "favorites": [
+      "/uploads/music-1751805427069-8982.mp3",
+      "/uploads/music-1751807475999-8314.mp3",
+      "/uploads/music-1751809469373-4597.mp3",
+      "/uploads/music-1751820037821-766.mp3",
+      "/uploads/music-1751822242527-5072.mp3",
+      "/uploads/music-1751823290175-8757.mp3",
+      "/uploads/music-1751826957158-4997.mp3",
+      "/uploads/music-1751827023044-6219.mp3",
+      "/uploads/music-1751828869144-5596.mp3",
+      "/uploads/music-1751894602289-3719.mp3",
+      "/uploads/music-1751894658952-5232.mp3",
+      "/uploads/music-1751896773523-9284.mp3",
+      "/uploads/music-1751897193198-8793.mp3",
+      "/uploads/music-1751898972103-9065.mp3",
+      "/uploads/music-1751899201998-663.mp3",
+      "/uploads/music-1751899355637-9116.mp3",
+      "/uploads/music-1751899439622-6189.mp3",
+      "/uploads/music-1751899757525-8310.mp3"
+    ]
+  },
+  {
+    "username": "menja",
+    "email": "menjaniainarandriamaharitra1@gmail.com",
+    "password": "$2b$10$1n6uiV3zFB2gwPsr24Hc8OabzcyGO/dP5VqiwmBNuK8ELln37SQQ.",
+    "joinedAt": "2025-07-06T12:58:29.928Z"
+  }
+]

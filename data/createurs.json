@@ -1,0 +1,12 @@
+[
+  {
+    "username": "rakoto",
+    "email": "rakoto@email.com",
+    "cin": "123456789012",
+    "phone": "0341234567",
+    "verified": true,
+    "photo": "/faces/rakoto.jpg",
+    "streams": 5,
+    "royalties": 0.25
+  }
+]

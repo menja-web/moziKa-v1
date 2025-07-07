@@ -1,0 +1,299 @@
+/* RESET + FOND */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f4f4f4;
+  color: #333;
+}
+
+/* EN-TÊTE */
+header {
+  background: #2196F3;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+header h1, header a {
+  color: white;
+  text-decoration: none;
+  margin: 0 15px;
+  font-weight: bold;
+}
+
+/* ZONE PRINCIPALE */
+main {
+  padding: 30px;
+  text-align: center;
+}
+
+/* FORMULAIRES */
+form {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  transition: all 0.5s ease-in-out;
+}
+
+#stepOneForm.hide, #stepTwoForm.hide {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+#stepOneForm.show, #stepTwoForm.show {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* SECTION CODE (étape 2) */
+#stepTwoContainer {
+  margin-top: 15px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  max-width: 100%;
+}
+
+#stepTwoForm {
+  margin: 0;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* CHAMPS */
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  background: #2196F3;
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0f62c0;
+}
+
+/* MESSAGE INSCRIPTION */
+#registerMessage {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-top: 15px;
+  transition: opacity 0.5s ease;
+}
+
+/* LISTE MUSIQUE */
+.music-list {
+  max-width: 800px;
+  margin: 2rem auto;
+  background-color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.music-item {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+}
+.music-item h3 {
+  margin: 0;
+}
+.music-item a {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: #007bff;
+  text-decoration: none;
+}
+.music-item a:hover {
+  text-decoration: underline;
+}
+
+/* CARTE SUPPRESSION */
+.music-card {
+  position: relative;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  background: #fdfdfd;
+  transition: transform 0.3s ease;
+}
+.music-card.removing {
+  animation: fadeOutScale 0.6s forwards;
+  background-color: #ffe5e5;
+}
+@keyframes fadeOutScale {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); height: 0; margin: 0; padding: 0; }
+}
+
+/* HEADER AVEC RECHERCHE (optionnel) */
+header form {
+  margin-top: 10px;
+}
+header input[type="text"] {
+  padding: 0.5rem;
+  width: 60%;
+  border-radius: 5px;
+  border: none;
+}
+header button {
+  padding: 0.5rem;
+  background: white;
+  color: #007bff;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+}
+#stepTwoContainer {
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  max-width: 100%;
+  text-align: center; /* aligné comme le reste du formulaire */
+}
+
+#stepTwoForm {
+  margin: 0 auto;
+  max-width: 400px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+#topContainer {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #f7f9fc;
+  padding-top: 10px;
+  margin-bottom: 10px;
+}
+footer {
+  background: #1b1f2a;
+  color: #ddd;
+  padding: 30px 20px 15px;
+  font-size: 0.95rem;
+}
+.footer-columns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 30px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.footer-section h4 {
+  color: #4a90e2;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+.footer-section p {
+  margin: 4px 0;
+}
+.footer-section a {
+  color: #ccc;
+  text-decoration: none;
+}
+.footer-section a:hover {
+  color: #4a90e2;
+}
+.footer-bottom {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: #888;
+}
+ul#musicList {
+  list-style: none;
+  margin: 30px auto;
+  padding: 0;
+  display: grid;
+  max-width: 1100px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+ul#musicList li {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.download-link {
+  display: inline-block;
+  background: #4a90e2;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  margin: 8px 0;
+  transition: background 0.3s ease;
+}
+
+.download-link:hover {
+  background: #357ab7;
+}
+#deleteMessage {
+  background: #eaf6ff;
+  color: green;
+  padding: 8px 16px;
+  display: inline-block;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: opacity 0.4s ease;
+}
+#deleteMessage.show {
+  display: inline-block;
+  opacity: 1;
+}
+.confirm-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #fff;
+  border: 2px solid #4a90e2;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+  padding: 20px;
+  border-radius: 8px;
+  z-index: 1000;
+  display: none;
+  text-align: center;
+}
+.confirm-box.show {
+  display: block;
+}
+audio::-internal-media-controls-download-button {
+  display: none;
+}
+
+audio::-webkit-media-controls-enclosure {
+  overflow: hidden;
+}
+
+audio::-webkit-media-controls-panel {
+  width: calc(100% + 30px); /* étend le panneau pour éviter le décalage */
+}
+

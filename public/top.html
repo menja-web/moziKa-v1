@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>🏆 Top Musiques - MoziKa</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f8fc;
+      padding: 20px;
+      color: #333;
+    }
+    header {
+      background: #4a90e2;
+      padding: 20px;
+      color: white;
+      margin-bottom: 30px;
+      text-align: center;
+      border-radius: 10px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    ul#topList {
+      list-style: none;
+      padding: 0;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    ul#topList li {
+      background: white;
+      border-left: 6px solid #4a90e2;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    ul#topList li strong {
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+    .download-link {
+      background: #4a90e2;
+      color: white;
+      padding: 6px 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      text-decoration: none;
+      margin-top: 8px;
+      display: inline-block;
+      width: fit-content;
+    }
+    .download-link:hover {
+      background: #357abd;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      margin: 30px 0;
+      color: #4a90e2;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .meta {
+      font-style: italic;
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏆 Top 5 des musiques les plus écoutées</h1>
+    <p>Les stars montantes de MoziKa 🎶</p>
+  </header>
+
+  <ul id="topList">
+    <li>Chargement des musiques...</li>
+  </ul>
+
+  <a href="accueil.html" class="back-link">← Retour à l’accueil</a>
+
+  <script>
+    fetch("/api/top")
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("topList");
+        if (!data.top || data.top.length === 0) {
+          list.innerHTML = "<li>Aucune musique populaire trouvée.</li>";
+          return;
+        }
+
+        list.innerHTML = "";
+        data.top.forEach((music, index) => {
+          const li = document.createElement("li");
+
+          let medal = "";
+          if (index === 0) medal = "🥇";
+          else if (index === 1) medal = "🥈";
+          else if (index === 2) medal = "🥉";
+          else medal = "⭐";
+
+          li.innerHTML = `
+            <strong>${medal} #${index + 1} ${music.title}</strong>
+            👤 Par ${music.uploader_name || 'Inconnu'}<br>
+            🎧 Écoutes : ${music.listenCount || 0}<br>
+            🎵 Genre : ${music.category || 'Non défini'}<br>
+            <audio controls controlsList="nodownload" src="${music.path}" data-path="${music.path}"></audio>
+            <a class="download-link" href="${music.path}" download data-path="${music.path}">📥 Télécharger</a>
+            <div class="meta">Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois</div>
+          `;
+
+          const link = li.querySelector(".download-link");
+          const span = li.querySelector(".downloadCount");
+
+          link.addEventListener("click", async () => {
+            try {
+              const res = await fetch("/api/download", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path: link.getAttribute("data-path") })
+              });
+              const data = await res.json();
+              if (data.status === "success") {
+                span.textContent = data.count;
+              }
+            } catch (err) {
+              console.error("Erreur téléchargement top :", err);
+            }
+          });
+
+          list.appendChild(li);
+        });
+      })
+      .catch(err => {
+        console.error("Erreur chargement top :", err);
+        document.getElementById("topList").innerHTML = "<li>Erreur de chargement.</li>";
+      });
+  </script>
+</body>
+</html>

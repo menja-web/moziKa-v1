@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Message</title>
+  <style>
+    #deleteMessage {
+      background: #eaf6ff;
+      color: green;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      margin: 20px auto;
+      text-align: center;
+      display: none;
+      max-width: 300px;
+    }
+    #deleteMessage.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <section id="feedbackZone" style="text-align: center;">
+    <div id="deleteMessage"></div>
+  </section>
+
+  <button onclick="showMessage()">🗑 Simuler suppression</button>
+
+  <script>
+    function showMessage() {
+      const el = document.getElementById("deleteMessage");
+      el.textContent = "✅ Supprimée avec succès";
+      el.classList.add("show");
+      setTimeout(() => {
+        el.classList.remove("show");
+        el.textContent = "";
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
+
