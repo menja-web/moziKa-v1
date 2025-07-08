@@ -79,11 +79,9 @@
       text-align: center;
     }
   </style>
-  <!-- Meta pour la barre d’adresse sur mobile Android -->
-<meta name="theme-color" content="#209CEE">
+  <meta name="theme-color" content="#209CEE">
 </head>
-<>
-  <!-- ✅ Message d’action affiché en haut comme dans le Top 5 -->
+<body>
   <section id="feedbackZone" style="text-align: center; margin-top: 20px;">
     <div id="deleteMessage" style="display: none;"></div>
   </section>
@@ -130,283 +128,282 @@
     </div>
   </main>
 
+  <script>
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("Script profil chargé");
 
-<!-- ─────── PARTIE 1 ─────── -->
-<script>
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("Script profil chargé");
+    let allMusics = [];
+    let user = null;
+    const deleteMsg  = document.getElementById("deleteMessage");
+    const confirmBox = document.getElementById("confirmBox");
+    let targetPath   = "";
+    let targetCard   = null;
+    let isRemovingFavorite = false;
 
-  let allMusics = [];
-  let user = null;
-  const deleteMsg   = document.getElementById("deleteMessage");
-  const confirmBox  = document.getElementById("confirmBox");
-  let targetPath    = "", targetCard = null;
-  let isRemovingFavorite = false;
-
-  // Met à jour le compteur d’écoutes dans toutes les cartes déjà affichées
-  function syncListenCount(path, newCount) {
-    document.querySelectorAll(".music-card").forEach(card => {
-      const audio = card.querySelector("audio");
-      if (audio && audio.src.includes(path)) {
-        const span = card.querySelector(".listenCount");
-        if (span) span.textContent = `🎧 Écoutes : ${newCount}`;
-      }
-    });
-  }
-
-  // 1️⃣ Récupération de la session
-  fetch("/api/get-session")
-    .then(res => res.json())
-    .then(data => {
-      if (data.status !== "success") {
-        window.location.href = "login.html";
-        return;
-      }
-      user = data.user;
-      localStorage.setItem("moziKaUser", JSON.stringify(user));
-      document.getElementById("username").textContent = user.username;
-      document.getElementById("email").textContent    = user.email;
-
-      // On peut maintenant charger les musiques de l’utilisateur
-      loadUserMusics();
-      loadUserFavorites();
-    })
-    .catch(err => {
-      console.error("Erreur session :", err);
-      window.location.href = "login.html";
-    });
-
-  // 2️⃣ Chargement de toutes les musiques pour synchroniser les compteurs
-  fetch("/api/musics")
-    .then(res => {
-      if (!res.ok) throw new Error("musics introuvable");
-      return res.json();
-    })
-    .then(data => {
-      allMusics = data;
-      allMusics.musics.forEach(music =>
-        syncListenCount(music.path, music.listenCount)
-      );
-    })
-    .catch(err => console.error("Erreur /api/musics :", err));
-
-// fin de la Partie 1 — la suite arrive dans la Partie 2
-<!-- ─────── PARTIE 2 ─────── -->
-  async function loadUserMusics() {
-    try {
-      const res  = await fetch("/api/musics");
-      const data = await res.json();
-      const list = document.getElementById("userMusics");
-      list.innerHTML = "";
-
-      const musics = data.musics.filter(m => m.uploader_email === user.email);
-      if (musics.length === 0) {
-        list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
-        return;
-      }
-
-      musics.forEach(music => {
-        const li = document.createElement("li");
-        li.className = "music-card";
-        li.innerHTML = `
-          <strong>${music.title}</strong> (${music.category})<br>
-          <img src="${music.cover}" alt="Couverture" width="100" /><br>
-          <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
-          <span class="listenCount">🎧 Écoutes : ${music.listenCount}</span><br>
-          📥 Téléchargements : ${music.downloadCount}<br>
-          <a class="download-link" href="${music.path}" download>📥 Télécharger</a>
-          <button class="deleteBtn" data-path="${music.path}">🗑 Supprimer</button>
-          <hr>
-        `;
-        list.appendChild(li);
-
-        const player = li.querySelector("audio");
-        player.addEventListener("play", () => {
-          document.querySelectorAll("audio").forEach(other => {
-            if (other !== player) other.pause();
-          });
-        });
-
-        let counted = false;
-        player.addEventListener("timeupdate", () => {
-          if (!counted && player.currentTime >= 15 && player.duration > 0) {
-            counted = true;
-            fetch("/api/update-listen", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ path: music.path, email: user.email })
-            })
-            .then(res => res.json())
-            .then(data => {
-              const countSpan = li.querySelector(".listenCount");
-              if (countSpan && data.listenCount !== undefined) {
-                countSpan.textContent = `🎧 Écoutes : ${data.listenCount}`;
-                // Applique aussi sur les autres cartes déjà créées
-                syncListenCount(music.path, data.listenCount);
-              }
-            })
-            .catch(err => console.error("Erreur écoute :", err));
-          }
-        });
+    function syncListenCount(path, newCount) {
+      document.querySelectorAll(".music-card").forEach(card => {
+        const audio = card.querySelector("audio");
+        if (audio && audio.src.includes(path)) {
+          const span = card.querySelector(".listenCount");
+          if (span) span.textContent = `🎧 Écoutes : ${newCount}`;
+        }
       });
-    } catch (err) {
-      document.getElementById("userMusics").innerHTML = "<li>Erreur de chargement.</li>";
-      console.error(err);
-    }
-  }
-
-  async function loadUserFavorites() {
-    try {
-      const res  = await fetch("/api/favorites");
-      const data = await res.json();
-      const list = document.getElementById("userFavorites");
-      list.innerHTML = "";
-
-      if (!data.favorites || data.favorites.length === 0) {
-        list.innerHTML = "<li>Aucune musique en favoris.</li>";
-        return;
-      }
-
-      data.favorites.forEach(music => {
-        const li = document.createElement("li");
-        li.className = "music-card";
-        li.innerHTML = `
-          <strong>${music.title}</strong> (${music.category})<br>
-          <img src="${music.cover}" alt="Couverture" width="100" /><br>
-          <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
-          <span class="listenCount">🎧 Écoutes : ${music.listenCount}</span><br>
-          📥 Téléchargements : ${music.downloadCount}<br>
-          <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-          <button class="removeFavBtn" data-path="${music.path}">❌ Retirer des favoris</button>
-          <hr>
-        `;
-        list.appendChild(li);
-
-        const player = li.querySelector("audio");
-        player.addEventListener("play", () => {
-          document.querySelectorAll("audio").forEach(other => {
-            if (other !== player) other.pause();
-          });
-        });
-
-        let counted = false;
-        player.addEventListener("timeupdate", () => {
-          if (!counted && player.currentTime >= 15 && player.duration > 0) {
-            counted = true;
-            fetch("/api/update-listen", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ path: music.path, email: user.email })
-            })
-            .then(res => res.json())
-            .then(data => {
-              const countSpan = li.querySelector(".listenCount");
-              if (countSpan && data.listenCount !== undefined) {
-                countSpan.textContent = `🎧 Écoutes : ${data.listenCount}`;
-                syncListenCount(music.path, data.listenCount);
-              }
-            })
-            .catch(err => console.error("Erreur écoute favoris :", err));
-          }
-        });
-      });
-    } catch (err) {
-      document.getElementById("userFavorites").innerHTML = "<li>Erreur de chargement des favoris.</li>";
-      console.error(err);
-    }
-  }
-
-  // Gestion des boutons Supprimer / Retirer favoris
-  document.addEventListener("click", function (e) {
-    if (e.target.classList.contains("deleteBtn")) {
-      targetPath = e.target.dataset.path;
-      targetCard = e.target.closest(".music-card");
-      isRemovingFavorite = false;
-      confirmBox.style.display = "block";
     }
 
-    if (e.target.classList.contains("removeFavBtn")) {
-      targetPath = e.target.dataset.path;
-      targetCard = e.target.closest(".music-card");
-      isRemovingFavorite = true;
-      confirmBox.style.display = "block";
-    }
-
-    if (e.target.classList.contains("no")) {
-      confirmBox.style.display = "none";
-      targetPath = "";
-      targetCard = null;
-      isRemovingFavorite = false;
-    }
-
-    if (e.target.classList.contains("yes")) {
-      if (!targetPath || !targetCard) return;
-      const endpoint = isRemovingFavorite ? "/api/remove-favorite" : "/api/delete";
-      fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath })
-      })
+    // 1️⃣ Récupération de la session
+    fetch("/api/get-session")
       .then(res => res.json())
       .then(data => {
-        if (data.status === "success") {
-          targetCard.remove();
-          deleteMsg.textContent = isRemovingFavorite
-            ? "💙 Favori retiré avec succès"
-            : "✅ Supprimée avec succès";
-          deleteMsg.style.display = "inline-block";
-          setTimeout(() => {
-            deleteMsg.style.display = "none";
-            deleteMsg.textContent = "";
-          }, 3000);
-
-          if (isRemovingFavorite) {
-            const favList = document.getElementById("userFavorites");
-            if (!favList.querySelector(".music-card")) {
-              favList.innerHTML = "<li>Aucune musique en favoris.</li>";
-            }
-          }
-        } else {
-          deleteMsg.textContent = "❌ Échec de la suppression";
-          deleteMsg.style.color = "red";
+        if (data.status !== "success") {
+          window.location.href = "login.html";
+          return;
         }
-        confirmBox.style.display = "none";
+        user = data.user;
+        localStorage.setItem("moziKaUser", JSON.stringify(user));
+        document.getElementById("username").textContent = user.username;
+        document.getElementById("email").textContent    = user.email;
+
+        loadUserMusics();
+        loadUserFavorites();
       })
       .catch(err => {
-        console.error("Erreur serveur :", err);
-        deleteMsg.textContent = "❌ Erreur serveur";
-        deleteMsg.style.color = "red";
-        confirmBox.style.display = "none";
+        console.error("Erreur session :", err);
+        window.location.href = "login.html";
       });
+
+    // 2️⃣ Chargement de toutes les musiques pour synchroniser les compteurs
+    fetch("/api/musics")
+      .then(res => {
+        if (!res.ok) throw new Error("musics introuvable");
+        return res.json();
+      })
+      .then(data => {
+        allMusics = data;
+        // création d’un index chemin → listenCount
+        const countMap = new Map(
+          allMusics.musics.map(m2 => [m2.path, m2.listenCount])
+        );
+        // mise à jour des compteurs existants
+        document.querySelectorAll(".music-card").forEach(card => {
+          const audio = card.querySelector("audio");
+          if (audio) {
+            const path = audio.src.split("/").pop();
+            const count = countMap.get(path);
+            if (count !== undefined) {
+              const span = card.querySelector(".listenCount");
+              if (span) span.textContent = `🎧 Écoutes : ${count}`;
+            }
+          }
+        });
+      })
+      .catch(err => console.error("Erreur /api/musics :", err));
+
+    // ─────── PARTIE 2 ───────
+    async function loadUserMusics() {
+      try {
+        const res  = await fetch("/api/musics");
+        const data = await res.json();
+        const list = document.getElementById("userMusics");
+        list.innerHTML = "";
+
+        const musics = data.musics.filter(m => m.uploader_email === user.email);
+        if (musics.length === 0) {
+          list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
+          return;
+        }
+
+        musics.forEach(music => {
+          const li = document.createElement("li");
+          li.className = "music-card";
+          li.innerHTML = `
+            <strong>${music.title}</strong> (${music.category})<br>
+            <img src="${music.cover}" alt="Couverture" width="100" /><br>
+            <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
+            <span class="listenCount">🎧 Écoutes : ${music.listenCount}</span><br>
+            📥 Téléchargements : ${music.downloadCount}<br>
+            <a class="download-link" href="${music.path}" download>📥 Télécharger</a>
+            <button class="deleteBtn" data-path="${music.path}">🗑 Supprimer</button>
+            <hr>
+          `;
+          list.appendChild(li);
+
+          const player = li.querySelector("audio");
+          player.addEventListener("play", () => {
+            document.querySelectorAll("audio").forEach(other => {
+              if (other !== player) other.pause();
+            });
+          });
+
+          let counted = false;
+          player.addEventListener("timeupdate", () => {
+            if (!counted && player.currentTime >= 15 && player.duration > 0) {
+              counted = true;
+              fetch("/api/update-listen", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path: music.path, email: user.email })
+              })
+              .then(res => res.json())
+              .then(data => {
+                const span = li.querySelector(".listenCount");
+                if (span && data.listenCount !== undefined) {
+                  span.textContent = `🎧 Écoutes : ${data.listenCount}`;
+                  syncListenCount(music.path, data.listenCount);
+                }
+              })
+              .catch(err => console.error("Erreur écoute :", err));
+            }
+          });
+        });
+      } catch (err) {
+        document.getElementById("userMusics").innerHTML = "<li>Erreur de chargement.</li>";
+        console.error(err);
+      }
     }
-  });
 
-  // Changement de mot de passe
-  async function changePassword(e) {
-    e.preventDefault();
-    const oldPass = document.getElementById("oldPass").value;
-    const newPass = document.getElementById("newPass").value;
-    const msg     = document.getElementById("msg");
+    // ─────── PARTIE 3 ───────
+    async function loadUserFavorites() {
+      try {
+        const res  = await fetch("/api/favorites");
+        const data = await res.json();
+        const list = document.getElementById("userFavorites");
+        list.innerHTML = "";
 
-    const res  = await fetch("/api/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+        if (!data.favorites || data.favorites.length === 0) {
+          list.innerHTML = "<li>Aucune musique en favoris.</li>";
+          return;
+        }
+
+        data.favorites.forEach(music => {
+          const li = document.createElement("li");
+          li.className = "music-card";
+          li.innerHTML = `
+            <strong>${music.title}</strong> (${music.category})<br>
+            <img src="${music.cover}" alt="Couverture" width="100" /><br>
+            <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
+            <span class="listenCount">🎧 Écoutes : ${music.listenCount}</span><br>
+            📥 Téléchargements : ${music.downloadCount}<br>
+            <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+            <button class="removeFavBtn" data-path="${music.path}">❌ Retirer des favoris</button>
+            <hr>
+          `;
+          list.appendChild(li);
+
+          const player = li.querySelector("audio");
+          player.addEventListener("play", () => {
+            document.querySelectorAll("audio").forEach(other => {
+              if (other !== player) other.pause();
+            });
+          });
+
+          let counted = false;
+          player.addEventListener("timeupdate", () => {
+            if (!counted && player.currentTime >= 15 && player.duration > 0) {
+              counted = true;
+              fetch("/api/update-listen", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path: music.path, email: user.email })
+              })
+              .then(res => res.json())
+              .then(data => {
+                const span = li.querySelector(".listenCount");
+                if (span && data.listenCount !== undefined) {
+                  span.textContent = `🎧 Écoutes : ${data.listenCount}`;
+                  syncListenCount(music.path, data.listenCount);
+                }
+              })
+              .catch(err => console.error("Erreur écoute favoris :", err));
+            }
+          });
+        });
+      } catch (err) {
+        document.getElementById("userFavorites").innerHTML = "<li>Erreur de chargement des favoris.</li>";
+        console.error(err);
+      }
+    }
+
+    document.addEventListener("click", function (e) {
+      if (e.target.classList.contains("deleteBtn")) {
+        targetPath = e.target.dataset.path;
+        targetCard = e.target.closest(".music-card");
+        isRemovingFavorite = false;
+        confirmBox.style.display = "block";
+      }
+      if (e.target.classList.contains("removeFavBtn")) {
+        targetPath = e.target.dataset.path;
+        targetCard = e.target.closest(".music-card");
+        isRemovingFavorite = true;
+        confirmBox.style.display = "block";
+      }
+      if (e.target.classList.contains("no")) {
+        confirmBox.style.display = "none";
+        targetPath = "";
+        targetCard = null;
+        isRemovingFavorite = false;
+      }
+      if (e.target.classList.contains("yes")) {
+        if (!targetPath || !targetCard) return;
+        const endpoint = isRemovingFavorite ? "/api/remove-favorite" : "/api/delete";
+        fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: targetPath })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            targetCard.remove();
+            deleteMsg.textContent = isRemovingFavorite
+              ? "💙 Favori retiré avec succès"
+              : "✅ Supprimée avec succès";
+            deleteMsg.style.display = "inline-block";
+            setTimeout(() => {
+              deleteMsg.style.display = "none";
+              deleteMsg.textContent = "";
+            }, 3000);
+            if (isRemovingFavorite) {
+              const favList = document.getElementById("userFavorites");
+              if (!favList.querySelector(".music-card")) {
+                favList.innerHTML = "<li>Aucune musique en favoris.</li>";
+              }
+            }
+          } else {
+            deleteMsg.textContent = "❌ Échec de la suppression";
+            deleteMsg.style.color = "red";
+          }
+          confirmBox.style.display = "none";
+        })
+        .catch(err => {
+          console.error("Erreur serveur :", err);
+          deleteMsg.textContent = "❌ Erreur serveur";
+          deleteMsg.style.color = "red";
+          confirmBox.style.display = "none";
+        });
+      }
     });
-    const data = await res.json();
-    msg.textContent = data.message;
-    msg.style.color = data.status === "success" ? "green" : "red";
-  }
 
-  // Déconnexion
-  function logoutUser() {
-    localStorage.removeItem("moziKaUser");
-    window.location.href = "login.html";
-  }
+    async function changePassword(e) {
+      e.preventDefault();
+      const oldPass = document.getElementById("oldPass").value;
+      const newPass = document.getElementById("newPass").value;
+      const msg     = document.getElementById("msg");
+      const res  = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+      });
+      const data = await res.json();
+      msg.textContent = data.message;
+      msg.style.color = data.status === "success" ? "green" : "red";
+    }
 
-}); // ← Fin de DOMContentLoaded
-</script>
+    function logoutUser() {
+      localStorage.removeItem("moziKaUser");
+      window.location.href = "login.html";
+    }
 
-
+  });  
+  </script>
 </body>
 </html>
