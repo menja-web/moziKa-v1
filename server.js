@@ -1,33 +1,33 @@
 // server.js
 
-require('dotenv').config();                 // Charge les variables d'environnement
-const mongoose    = require('mongoose');    
+require('dotenv').config();             // Charge les variables d'environnement
+const mongoose    = require('mongoose');
 const express     = require('express');
 const path        = require('path');
 const fs          = require('fs');
 const session     = require('express-session');
-const MongoStore  = require('connect-mongo');   // ← Stockage persistant des sessions
+const MongoStore  = require('connect-mongo');  // Stockage persistant des sessions
 const multer      = require('multer');
 const nodemailer  = require('nodemailer');
 const bcrypt      = require('bcrypt');
 const crypto      = require('crypto');
 
-// 1️⃣ Connexion à MongoDB (Atlas ou URI classique)
-mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI)
+// 1️⃣ Connexion à MongoDB (Atlas)
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Connexion à MongoDB réussie'))
   .catch(err => console.error('❌ Erreur MongoDB :', err));
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// 📁 Définition des chemins
+// 📁 Chemins vers dossiers et fichiers
 const uploadDir     = path.join(__dirname, 'uploads');
 const usersFile     = path.join(__dirname, 'users.json');
 const musicsFile    = path.join(__dirname, 'musics.json');
 const resetFile     = path.join(__dirname, 'resetTokens.json');
 const favoritesFile = path.join(__dirname, 'favorites.json');
 
-// 🧩 Création des dossiers / fichiers si manquants
+// 🧩 Création des dossiers / fichiers s'ils n'existent pas
 if (!fs.existsSync(uploadDir))       fs.mkdirSync(uploadDir);
 if (!fs.existsSync(usersFile))       fs.writeFileSync(usersFile, JSON.stringify([]));
 if (!fs.existsSync(musicsFile))      fs.writeFileSync(musicsFile, JSON.stringify([]));
@@ -41,41 +41,41 @@ let musics = JSON.parse(fs.readFileSync(musicsFile));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ← Remplace MemoryStore par MongoStore
+// ← Remplace MemoryStore par MongoStore pour les sessions
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'moziKaSecretKey',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || process.env.MONGO_URI,
-    ttl: 24 * 60 * 60            // sessions valides 1 jour
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60    // 1 jour en secondes
   }),
   cookie: {
-    maxAge: 3600_000,             // 1 heure
+    maxAge: 3600000,       // 1 heure en ms
     sameSite: 'lax',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production'
   }
 }));
 
-// Fichiers statiques
+// Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(uploadDir));
 app.use('/data', express.static(path.join(__dirname, 'data')));
 
-// Multer config pour upload musique + couverture
+// Configuration Multer pour uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const ext     = path.extname(file.originalname);
-    const unique  = Date.now() + '-' + Math.floor(Math.random() * 10000);
-    const prefix  = file.fieldname === 'musicFile' ? 'music-' : 'cover-';
+    const ext    = path.extname(file.originalname);
+    const unique = Date.now() + '-' + Math.floor(Math.random() * 10000);
+    const prefix = file.fieldname === 'musicFile' ? 'music-' : 'cover-';
     cb(null, prefix + unique + ext);
   }
 });
 const upload = multer({ storage });
 
-// Middleware simple pour protéger les routes
+// Middleware pour routes protégées
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.status(403).send("Connecte-toi pour accéder.");
   next();
@@ -90,35 +90,37 @@ app.post('/api/send-code', async (req, res) => {
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: 'ton@gmail.com', pass: 'motdepasse' }
+      auth: {
+        user: 'menjaniainarandriamaharitra1@gmail.com',
+        pass: 'mexu pndj laak vivo'
+      }
     });
     await transporter.sendMail({
-      from: 'MoziKa <ton@gmail.com>',
+      from: 'MoziKa <menjaniainarandriamaharitra@gmail.com>',
       to: email,
-      subject: '🔐 Code de vérification MoziKa',
-      text: `Bonjour ${username}, ton code : ${code}`
+      subject: '🔐 Ton code de vérification MoziKa',
+      text: `Bonjour ${username},\n\nMerci d’avoir rejoint MoziKa 🎵\nVoici ton code : ${code}\n\nÀ bientôt !`
     });
     req.session.verificationCode = code;
     req.session.pendingUser = { email, username, password };
-    res.json({ status: "success", message: "Code envoyé !" });
+    res.json({ status: "success", message: "✅ Code envoyé !" });
   } catch (err) {
-    console.error("Erreur send-code :", err);
-    res.status(500).json({ status: "error", message: "Erreur envoi mail." });
+    console.error("Erreur envoi email :", err);
+    res.status(500).json({ status: "error", message: "Erreur d’envoi du mail." });
   }
 });
 
 // Validation du code et création du compte
 app.post('/api/register', (req, res) => {
-  const { code } = req.body;
-  const savedUser  = req.session.pendingUser;
-  const validCode  = req.session.verificationCode;
+  const { code }        = req.body;
+  const savedUser       = req.session.pendingUser;
+  const validCode       = req.session.verificationCode;
   if (!savedUser || !code || code !== validCode) {
-    return res.status(400).json({ status: "error", message: "Code invalide." });
+    return res.status(400).json({ status: "error", message: "Code invalide ou expiré." });
   }
-
   try {
-    const users  = JSON.parse(fs.readFileSync(usersFile));
-    if (users.find(u => u.email === savedUser.email)) {
+    const users = JSON.parse(fs.readFileSync(usersFile));
+    if (users.find(u => u.email.toLowerCase() === savedUser.email.toLowerCase())) {
       return res.status(409).json({ status: "error", message: "Email déjà utilisé." });
     }
     const hash = bcrypt.hashSync(savedUser.password, 10);
@@ -132,9 +134,9 @@ app.post('/api/register', (req, res) => {
     req.session.user = { username: savedUser.username, email: savedUser.email };
     delete req.session.pendingUser;
     delete req.session.verificationCode;
-    res.json({ status: "success", message: "Compte créé !" });
+    res.json({ status: "success", message: "Compte créé avec succès !" });
   } catch (err) {
-    console.error("Erreur register :", err);
+    console.error("Erreur création compte :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
@@ -158,7 +160,7 @@ app.post('/api/login', (req, res) => {
 
 // ─── PARTIE 3 : Gestion des musiques ───
 
-// Upload d'une musique
+// Upload musique + couverture
 app.post('/api/upload', requireLogin, upload.fields([
   { name: 'musicFile', maxCount: 1 },
   { name: 'coverFile', maxCount: 1 }
@@ -168,7 +170,7 @@ app.post('/api/upload', requireLogin, upload.fields([
   const musicFile  = req.files['musicFile']?.[0];
   const coverFile  = req.files['coverFile']?.[0];
   if (!title || !category || !musicFile || !coverFile) {
-    return res.status(400).json({ status: "error", message: "Champs manquants." });
+    return res.status(400).json({ status: "error", message: "Champs ou fichiers manquants." });
   }
   const newMusic = {
     title,
@@ -183,10 +185,10 @@ app.post('/api/upload', requireLogin, upload.fields([
   };
   musics.push(newMusic);
   fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2));
-  res.json({ status: "success", message: "Musique ajoutée !", music: newMusic });
+  res.json({ status: "success", message: "Musique ajoutée avec succès !", music: newMusic });
 });
 
-// Écoute d'une musique
+// Enregistrement d'une écoute
 app.post('/api/listen', (req, res) => {
   const { path } = req.body;
   const user     = req.session.user;
@@ -212,7 +214,7 @@ app.post('/api/download', (req, res) => {
   res.json({ status: "success", count: music.downloadCount });
 });
 
-// Suppression d'une musique
+// Suppression de musique
 app.post('/api/delete', (req, res) => {
   const { path: musicPath } = req.body;
   const user = req.session.user;
@@ -229,41 +231,42 @@ app.post('/api/delete', (req, res) => {
   res.json({ status: "success" });
 });
 
-// Réinitialisation du mot de passe – demande
+// Réinitialisation : demande de lien
 app.post("/api/reset-request", async (req, res) => {
   const { email } = req.body;
-  const users = JSON.parse(fs.readFileSync(usersFile));
-  const user  = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const users     = JSON.parse(fs.readFileSync(usersFile));
+  const user      = users.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!user) return res.json({ status: "error", message: "Adresse inconnue" });
-
   const token     = crypto.randomBytes(24).toString("hex");
-  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 min
+  const expiresAt = Date.now() + 15 * 60 * 1000;  // 15 minutes
   const resetTokens = JSON.parse(fs.readFileSync(resetFile));
   resetTokens.push({ email: user.email, token, expiresAt });
   fs.writeFileSync(resetFile, JSON.stringify(resetTokens, null, 2));
-
   const resetLink = `http://localhost:${PORT}/new-password.html?token=${token}`;
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: 'ton@gmail.com', pass: 'motdepasse' }
+      auth: {
+        user: 'menjaniainarandriamaharitra1@gmail.com',
+        pass: 'mexu pndj laak vivo'
+      }
     });
     await transporter.sendMail({
-      from: 'MoziKa <ton@gmail.com>',
+      from: 'MoziKa <menjaniainarandriamaharitra@gmail.com>',
       to: user.email,
-      subject: '🔐 Réinitialisation MoziKa',
-      text: `Lien : ${resetLink}`
+      subject: '🔐 Réinitialisation du mot de passe MoziKa',
+      text: `Bonjour ${user.username},\n\nVoici ton lien : ${resetLink}\nValable 15 minutes.\n\nMoziKa 💙`
     });
     res.json({ status: "success", message: "Lien envoyé !" });
   } catch (err) {
     console.error("Erreur reset-request :", err);
-    res.status(500).json({ status: "error", message: "Erreur mail." });
+    res.status(500).json({ status: "error", message: "Erreur d’envoi du mail." });
   }
 });
 
-// ─── PARTIE 4 : Mots de passe & Favoris ───
+// ─── PARTIE 4 : Changer / Réinitialiser mot de passe & Favoris ───
 
-// Reset via lien
+// Traitement du lien de réinitialisation
 app.post("/api/reset-password", (req, res) => {
   const { token, newPassword } = req.body;
   const resetTokens = JSON.parse(fs.readFileSync(resetFile));
@@ -279,10 +282,10 @@ app.post("/api/reset-password", (req, res) => {
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
   const updatedTokens = resetTokens.filter(r => r.token !== token);
   fs.writeFileSync(resetFile, JSON.stringify(updatedTokens, null, 2));
-  res.json({ status: "success", message: "Mot de passe modifié !" });
+  res.json({ status: "success", message: "Mot de passe modifié avec succès !" });
 });
 
-// Change while connected
+// Changement de mot de passe connecté
 app.post("/api/change-password", (req, res) => {
   const sessionUser = req.session.user;
   const { oldPassword, newPassword } = req.body;
@@ -295,7 +298,7 @@ app.post("/api/change-password", (req, res) => {
   }
   user.password = bcrypt.hashSync(newPassword, 10);
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-  res.json({ status: "success", message: "Mot de passe mis à jour !" });
+  res.json({ status: "success", message: "Mot de passe mis à jour ✅" });
 });
 
 // Ajouter un favori
@@ -305,6 +308,7 @@ app.post("/api/add-favorite", (req, res) => {
   if (!sessionUser || !musicPath) return res.status(400).json({ status: "error" });
   const users = JSON.parse(fs.readFileSync(usersFile));
   const user  = users.find(u => u.email === sessionUser.email);
+  if (!user) return res.status(404).json({ status: "error" });
   user.favorites = user.favorites || [];
   if (!user.favorites.includes(musicPath)) user.favorites.push(musicPath);
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
@@ -317,7 +321,8 @@ app.get("/api/favorites", (req, res) => {
   if (!sessionUser) return res.status(401).json({ status: "error" });
   const users = JSON.parse(fs.readFileSync(usersFile));
   const user  = users.find(u => u.email === sessionUser.email);
-  const favs  = user.favorites || [];
+  if (!user) return res.status(404).json({ status: "error" });
+  const favs      = user.favorites || [];
   const favMusics = musics.filter(m => favs.includes(m.path));
   res.json({ status: "success", favorites: favMusics });
 });
@@ -328,12 +333,12 @@ app.get("/api/favorites", (req, res) => {
 app.get("/api/top", (req, res) => {
   const top = musics
     .filter(m => typeof m.listenCount === "number")
-    .sort((a,b) => b.listenCount - a.listenCount)
-    .slice(0,5);
+    .sort((a, b) => b.listenCount - a.listenCount)
+    .slice(0, 5);
   res.json({ top });
 });
 
-// Récupérer email session
+// Récupérer l’email en session
 app.get("/api/user-email", (req, res) => {
   const sessionUser = req.session.user;
   res.json({ email: sessionUser?.email || "" });
@@ -357,21 +362,18 @@ app.get('/api/musics', (req, res) => {
 const createurListRoute = require("./routes/get-createurs");
 app.use(createurListRoute);
 
-// Mise à jour photo de profil
+// Mise à jour de la photo de profil
 const photoUpload = multer({ dest: path.join(__dirname, 'public/faces/') });
 app.post("/api/update-photo", photoUpload.single("photo"), (req, res) => {
   const { username } = req.body;
   const file        = req.file;
   if (!username || !file) return res.json({ success: false });
-
   const ext         = path.extname(file.originalname);
   const newFilename = file.filename.replace(ext, "") + ext;
   const photoPath   = "./faces/" + newFilename;
   const fullPath    = path.join(__dirname, "public", "faces", newFilename);
-
   fs.mkdirSync(path.dirname(fullPath), { recursive: true });
   fs.renameSync(file.path, fullPath);
-
   const createursPath = path.join(__dirname, "data", "createurs.json");
   if (!fs.existsSync(createursPath)) fs.writeFileSync(createursPath, JSON.stringify([]));
   const createurs = JSON.parse(fs.readFileSync(createursPath));
@@ -387,8 +389,10 @@ app.post("/api/update-photo", photoUpload.single("photo"), (req, res) => {
 // Musiques par utilisateur
 app.get('/api/musics-by-user', (req, res) => {
   const sessionUser = req.session.user;
-  if (!sessionUser) return res.status(401).json({ status: "error", message: "Non connecté." });
-  const all = JSON.parse(fs.readFileSync(musicsFile));
+  if (!sessionUser) {
+    return res.status(401).json({ status: "error", message: "Non connecté." });
+  }
+  const all     = JSON.parse(fs.readFileSync(musicsFile));
   const uploads = all.filter(m => m.uploader_email === sessionUser.email);
   res.json({ status: "success", musics: uploads });
 });
@@ -397,19 +401,26 @@ app.get('/api/musics-by-user', (req, res) => {
 app.post("/api/remove-favorite", (req, res) => {
   const { path }     = req.body;
   const sessionUser  = req.session.user;
-  if (!sessionUser) return res.status(401).json({ status: "error" });
-  const favorites = JSON.parse(fs.readFileSync(favoritesFile));
-  const updated   = favorites.filter(f => !(f.path === path && f.email === sessionUser.email));
-  fs.writeFileSync(favoritesFile, JSON.stringify(updated, null, 2));
-  res.json({ status: "success" });
+  if (!sessionUser || !sessionUser.email) {
+    return res.status(401).json({ status: "error" });
+  }
+  try {
+    const favorites = JSON.parse(fs.readFileSync(favoritesFile));
+    const updated   = favorites.filter(f => !(f.path === path && f.email === sessionUser.email));
+    fs.writeFileSync(favoritesFile, JSON.stringify(updated, null, 2));
+    res.json({ status: "success" });
+  } catch (err) {
+    console.error("Erreur retrait favori :", err);
+    res.status(500).json({ status: "error" });
+  }
 });
 
-// Mettre à jour le compteur via AJAX
+// Mettre à jour le compteur d'écoutes via AJAX
 app.post("/api/update-listen", (req, res) => {
   const { path, email } = req.body;
   const all  = JSON.parse(fs.readFileSync(musicsFile));
   const idx  = all.findIndex(m => m.path === path);
-  if (idx === -1) return res.status(404).json({ status: "error", message: "Introuvable." });
+  if (idx === -1) return res.status(404).json({ status: "error", message: "Musique introuvable." });
   const music = all[idx];
   music.listeners = music.listeners || [];
   if (!music.listeners.includes(email)) {
@@ -420,7 +431,7 @@ app.post("/api/update-listen", (req, res) => {
   res.json({ status: "success", listenCount: music.listenCount });
 });
 
-// Démarrage du serveur
+// 🚀 Lancement du serveur
 app.listen(PORT, () => {
   console.log(`🎵 Serveur MoziKa actif sur http://localhost:${PORT}`);
 });
