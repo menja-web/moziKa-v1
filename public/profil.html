@@ -79,8 +79,10 @@
       text-align: center;
     }
   </style>
+  <!-- Meta pour la barre d’adresse sur mobile Android -->
+<meta name="theme-color" content="#209CEE">
 </head>
-<body>
+<>
   <!-- ✅ Message d’action affiché en haut comme dans le Top 5 -->
   <section id="feedbackZone" style="text-align: center; margin-top: 20px;">
     <div id="deleteMessage" style="display: none;"></div>
@@ -129,52 +131,70 @@
   </main>
 
 
+<!-- ─────── PARTIE 1 ─────── -->
 <script>
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("Script profil chargé");
+
+  let allMusics = [];
   let user = null;
-  const deleteMsg = document.getElementById("deleteMessage");
-  const confirmBox = document.getElementById("confirmBox");
-  let targetPath = "", targetCard = null;
+  const deleteMsg   = document.getElementById("deleteMessage");
+  const confirmBox  = document.getElementById("confirmBox");
+  let targetPath    = "", targetCard = null;
   let isRemovingFavorite = false;
-// 👇 AJOUTE ICI
-function syncListenCount(path, newCount) {
-  document.querySelectorAll(".music-card").forEach(card => {
-    const audio = card.querySelector("audio");
-    if (audio && audio.src.includes(path)) {
-      const span = card.querySelector(".listenCount");
-      if (span) span.textContent = `🎧 Écoutes : ${newCount}`;
-    }
-  });
-}
+
+  // Met à jour le compteur d’écoutes dans toutes les cartes déjà affichées
+  function syncListenCount(path, newCount) {
+    document.querySelectorAll(".music-card").forEach(card => {
+      const audio = card.querySelector("audio");
+      if (audio && audio.src.includes(path)) {
+        const span = card.querySelector(".listenCount");
+        if (span) span.textContent = `🎧 Écoutes : ${newCount}`;
+      }
+    });
+  }
+
+  // 1️⃣ Récupération de la session
   fetch("/api/get-session")
     .then(res => res.json())
     .then(data => {
-      if (data.status === "success") {
-        user = data.user;
-        localStorage.setItem("moziKaUser", JSON.stringify(user));
-        document.getElementById("username").textContent = user.username;
-        document.getElementById("email").textContent = user.email;
-        loadUserMusics();
-        loadUserFavorites();
-      } else {
+      if (data.status !== "success") {
         window.location.href = "login.html";
+        return;
       }
+      user = data.user;
+      localStorage.setItem("moziKaUser", JSON.stringify(user));
+      document.getElementById("username").textContent = user.username;
+      document.getElementById("email").textContent    = user.email;
+
+      // On peut maintenant charger les musiques de l’utilisateur
+      loadUserMusics();
+      loadUserFavorites();
     })
     .catch(err => {
       console.error("Erreur session :", err);
       window.location.href = "login.html";
     });
-fetch("/api/musics")
-  .then(res => res.json())
-  .then(allMusics => {
-    const realMusic = allMusics.musics.find(m => m.path === music.path);
-    if (realMusic) {
-      music.listenCount = realMusic.listenCount;
-    }
-});
 
+  // 2️⃣ Chargement de toutes les musiques pour synchroniser les compteurs
+  fetch("/api/musics")
+    .then(res => {
+      if (!res.ok) throw new Error("musics introuvable");
+      return res.json();
+    })
+    .then(data => {
+      allMusics = data;
+      allMusics.musics.forEach(music =>
+        syncListenCount(music.path, music.listenCount)
+      );
+    })
+    .catch(err => console.error("Erreur /api/musics :", err));
+
+// fin de la Partie 1 — la suite arrive dans la Partie 2
+<!-- ─────── PARTIE 2 ─────── -->
   async function loadUserMusics() {
     try {
-      const res = await fetch("/api/musics");
+      const res  = await fetch("/api/musics");
       const data = await res.json();
       const list = document.getElementById("userMusics");
       list.innerHTML = "";
@@ -201,7 +221,6 @@ fetch("/api/musics")
         list.appendChild(li);
 
         const player = li.querySelector("audio");
-
         player.addEventListener("play", () => {
           document.querySelectorAll("audio").forEach(other => {
             if (other !== player) other.pause();
@@ -222,6 +241,8 @@ fetch("/api/musics")
               const countSpan = li.querySelector(".listenCount");
               if (countSpan && data.listenCount !== undefined) {
                 countSpan.textContent = `🎧 Écoutes : ${data.listenCount}`;
+                // Applique aussi sur les autres cartes déjà créées
+                syncListenCount(music.path, data.listenCount);
               }
             })
             .catch(err => console.error("Erreur écoute :", err));
@@ -233,9 +254,10 @@ fetch("/api/musics")
       console.error(err);
     }
   }
+
   async function loadUserFavorites() {
     try {
-      const res = await fetch("/api/favorites");
+      const res  = await fetch("/api/favorites");
       const data = await res.json();
       const list = document.getElementById("userFavorites");
       list.innerHTML = "";
@@ -261,7 +283,6 @@ fetch("/api/musics")
         list.appendChild(li);
 
         const player = li.querySelector("audio");
-
         player.addEventListener("play", () => {
           document.querySelectorAll("audio").forEach(other => {
             if (other !== player) other.pause();
@@ -282,6 +303,7 @@ fetch("/api/musics")
               const countSpan = li.querySelector(".listenCount");
               if (countSpan && data.listenCount !== undefined) {
                 countSpan.textContent = `🎧 Écoutes : ${data.listenCount}`;
+                syncListenCount(music.path, data.listenCount);
               }
             })
             .catch(err => console.error("Erreur écoute favoris :", err));
@@ -294,24 +316,24 @@ fetch("/api/musics")
     }
   }
 
+  // Gestion des boutons Supprimer / Retirer favoris
   document.addEventListener("click", function (e) {
     if (e.target.classList.contains("deleteBtn")) {
       targetPath = e.target.dataset.path;
       targetCard = e.target.closest(".music-card");
       isRemovingFavorite = false;
-      confirmBox.classList.add("show");
+      confirmBox.style.display = "block";
     }
 
     if (e.target.classList.contains("removeFavBtn")) {
       targetPath = e.target.dataset.path;
       targetCard = e.target.closest(".music-card");
       isRemovingFavorite = true;
-      confirmBox.classList.add("show");
+      confirmBox.style.display = "block";
     }
 
     if (e.target.classList.contains("no")) {
       confirmBox.style.display = "none";
-      confirmBox.classList.remove("show");
       targetPath = "";
       targetCard = null;
       isRemovingFavorite = false;
@@ -319,7 +341,6 @@ fetch("/api/musics")
 
     if (e.target.classList.contains("yes")) {
       if (!targetPath || !targetCard) return;
-
       const endpoint = isRemovingFavorite ? "/api/remove-favorite" : "/api/delete";
       fetch(endpoint, {
         method: "POST",
@@ -330,16 +351,11 @@ fetch("/api/musics")
       .then(data => {
         if (data.status === "success") {
           targetCard.remove();
-
-          const successMsg = isRemovingFavorite
+          deleteMsg.textContent = isRemovingFavorite
             ? "💙 Favori retiré avec succès"
             : "✅ Supprimée avec succès";
-
-          deleteMsg.textContent = successMsg;
-          deleteMsg.classList.add("show");
           deleteMsg.style.display = "inline-block";
           setTimeout(() => {
-            deleteMsg.classList.remove("show");
             deleteMsg.style.display = "none";
             deleteMsg.textContent = "";
           }, 3000);
@@ -354,7 +370,6 @@ fetch("/api/musics")
           deleteMsg.textContent = "❌ Échec de la suppression";
           deleteMsg.style.color = "red";
         }
-
         confirmBox.style.display = "none";
       })
       .catch(err => {
@@ -366,29 +381,32 @@ fetch("/api/musics")
     }
   });
 
+  // Changement de mot de passe
   async function changePassword(e) {
     e.preventDefault();
     const oldPass = document.getElementById("oldPass").value;
     const newPass = document.getElementById("newPass").value;
-    const msg = document.getElementById("msg");
+    const msg     = document.getElementById("msg");
 
-    const res = await fetch("/api/change-password", {
+    const res  = await fetch("/api/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
     });
-
     const data = await res.json();
     msg.textContent = data.message;
     msg.style.color = data.status === "success" ? "green" : "red";
   }
 
+  // Déconnexion
   function logoutUser() {
     localStorage.removeItem("moziKaUser");
     window.location.href = "login.html";
   }
-  
+
+}); // ← Fin de DOMContentLoaded
 </script>
+
 
 </body>
 </html>

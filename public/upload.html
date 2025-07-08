@@ -2,6 +2,9 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <!-- ← AJOUTE CE MÉTA -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Uploader une musique - MoziKa</title>
   <style>
     body {
@@ -36,21 +39,21 @@
     input[type="text"],
     input[type="email"],
     select,
-    input[type="file"] {
+    input[type="file"],
+    button {
       width: 100%;
       padding: 10px;
       margin-bottom: 20px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      font-size: 1rem;
+      box-sizing: border-box;
     }
 
     button {
       background: #4a90e2;
       color: white;
-      padding: 10px 20px;
       border: none;
-      border-radius: 6px;
-      font-weight: bold;
       cursor: pointer;
       transition: background 0.3s ease;
     }
@@ -65,6 +68,7 @@
     }
 
     .nav a {
+      display: inline-block;
       background-color: #4a90e2;
       color: white;
       padding: 10px 20px;
@@ -72,6 +76,7 @@
       text-decoration: none;
       margin: 0 10px;
       font-weight: bold;
+      transition: background 0.3s ease;
     }
 
     .nav a:hover {
@@ -84,6 +89,27 @@
       font-size: 1.2em;
       margin-top: 20px;
       transition: opacity 0.5s ease;
+    }
+
+    /* Styles responsives pour mobile */
+    @media (max-width: 600px) {
+      body {
+        padding: 20px;
+      }
+      form {
+        padding: 20px;
+      }
+      .nav a {
+        display: block;
+        margin: 10px auto;
+        width: 80%;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      label, input, select, button {
+        font-size: 0.95rem;
+      }
     }
   </style>
 </head>
@@ -99,7 +125,7 @@
     <input type="text" name="title" id="title" required />
 
     <label for="uploader_email">Votre email (auto-détecté)</label>
-    <input type="email" name="uploader_email" id="uploader_email" disabled />
+    <input type="email" name="uploader_email" id="uploader_email" readonly />
 
     <label for="category">Catégorie musicale</label>
     <select name="category" id="category" required>
@@ -124,25 +150,26 @@
     <p id="uploadMessage"></p>
   </form>
 
+  <!-- Script 1 : récupération depuis localStorage -->
   <script>
     const user = JSON.parse(localStorage.getItem("moziKaUser"));
     if (user) {
-      document.getElementById("uploader_email").value = user.email;
+      const inp = document.getElementById("uploader_email");
+      if (inp) inp.value = user.email;
     }
 
     const form = document.getElementById("uploadForm");
-    const msg = document.getElementById("uploadMessage");
+    const msg  = document.getElementById("uploadMessage");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       msg.textContent = "";
       const formData = new FormData(form);
 
-      const res = await fetch("/api/upload", {
+      const res  = await fetch("/api/upload", {
         method: "POST",
         body: formData
       });
-
       const data = await res.json();
       msg.textContent = data.message;
       msg.style.color = data.status === "success" ? "green" : "red";
@@ -154,16 +181,18 @@
       }
     });
   </script>
-  <script>
-  fetch("/api/user-email")
-    .then(res => res.json())
-    .then(data => {
-      document.querySelector("input[name='email']").value = data.email || "";
-    })
-    .catch(err => {
-      console.error("Erreur chargement email :", err);
-    });
-</script>
 
+  <!-- Script 2 : fetch de l’email serveur -->
+  <script>
+    fetch("/api/user-email")
+      .then(res => res.json())
+      .then(data => {
+        const inp = document.getElementById("uploader_email");
+        if (inp) inp.value = data.email || "";
+      })
+      .catch(err => {
+        console.error("Erreur chargement email :", err);
+      });
+  </script>
 </body>
 </html>

@@ -208,7 +208,25 @@
       font-size: 0.85rem;
       color: #888;
     }
+    @media screen and (max-width: 768px) {
+  .conteneur {
+    flex-direction: column;
+    padding: 10px;
+  }
+  .titre {
+    font-size: 20px;
+    text-align: center;
+  }
+  .bouton {
+    width: 100%;
+    margin: 10px 0;
+  }
+}
+
   </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Meta pour la barre d’adresse sur mobile Android -->
+<meta name="theme-color" content="#209CEE">
 </head>
 <body>
   <header>
@@ -405,6 +423,7 @@
 
   fetchMusics();
 </script>
+
 
 </body>
 </html>
