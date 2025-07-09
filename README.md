@@ -1,2 +1,1 @@
-# moziKa-v1
-Plateforme musicale en version 1 - par Menjaniaina
+"# MoziKa\n\nPlateforme de partage et écoute musicale.\n\n" 

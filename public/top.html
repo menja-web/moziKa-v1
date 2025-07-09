@@ -109,61 +109,71 @@
   <a href="accueil.html" class="back-link">← Retour à l’accueil</a>
 
   <script>
-    fetch("/api/top")
-      .then(res => res.json())
-      .then(data => {
-        const list = document.getElementById("topList");
-        if (!data.top || data.top.length === 0) {
-          list.innerHTML = "<li>Aucune musique populaire trouvée.</li>";
-          return;
-        }
+  fetch("/api/top")
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("topList");
+      if (!data.top || data.top.length === 0) {
+        list.innerHTML = "<li>Aucune musique populaire trouvée.</li>";
+        return;
+      }
 
-        list.innerHTML = "";
-        data.top.forEach((music, index) => {
-          const li = document.createElement("li");
+      list.innerHTML = "";
+      data.top.forEach((music, index) => {
+        const li = document.createElement("li");
 
-          let medal = "";
-          if (index === 0) medal = "🥇";
-          else if (index === 1) medal = "🥈";
-          else if (index === 2) medal = "🥉";
-          else medal = "⭐";
+        let medal = "";
+        if (index === 0) medal = "🥇";
+        else if (index === 1) medal = "🥈";
+        else if (index === 2) medal = "🥉";
+        else medal = "⭐";
 
-          li.innerHTML = `
-            <strong>${medal} #${index + 1} ${music.title}</strong>
-            👤 Par ${music.uploader_name || 'Inconnu'}<br>
-            🎧 Écoutes : ${music.listenCount || 0}<br>
-            🎵 Genre : ${music.category || 'Non défini'}<br>
-            <audio controls controlsList="nodownload" src="${music.path}" data-path="${music.path}"></audio>
-            <a class="download-link" href="${music.path}" download data-path="${music.path}">📥 Télécharger</a>
-            <div class="meta">Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois</div>
-          `;
+        li.innerHTML = `
+          <strong>${medal} #${index + 1} ${music.title}</strong>
+          👤 Par ${music.uploader_name || 'Inconnu'}<br>
+          🎧 Écoutes : ${music.listenCount || 0}<br>
+          🎵 Genre : ${music.category || 'Non défini'}<br>
+          <audio controls controlsList="nodownload" src="${music.path}" data-path="${music.path}"></audio>
+          <a class="download-link" href="${music.path}" download data-path="${music.path}">📥 Télécharger</a>
+          <div class="meta">Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois</div>
+        `;
 
-          const link = li.querySelector(".download-link");
-          const span = li.querySelector(".downloadCount");
+        const link   = li.querySelector(".download-link");
+        const audio  = li.querySelector("audio");
+        const span   = li.querySelector(".downloadCount");
 
-          link.addEventListener("click", async () => {
-            try {
-              const res = await fetch("/api/download", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ path: link.getAttribute("data-path") })
-              });
-              const data = await res.json();
-              if (data.status === "success") {
-                span.textContent = data.count;
-              }
-            } catch (err) {
-              console.error("Erreur téléchargement top :", err);
+        // Gestion téléchargement
+        link.addEventListener("click", async () => {
+          try {
+            const res = await fetch("/api/download", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ path: link.getAttribute("data-path") })
+            });
+            const data = await res.json();
+            if (data.status === "success") {
+              span.textContent = data.count;
             }
-          });
-
-          list.appendChild(li);
+          } catch (err) {
+            console.error("Erreur téléchargement top :", err);
+          }
         });
-      })
-      .catch(err => {
-        console.error("Erreur chargement top :", err);
-        document.getElementById("topList").innerHTML = "<li>Erreur de chargement.</li>";
+
+        // Lecture automatique du suivant
+        audio.addEventListener("ended", () => {
+          const audios = list.querySelectorAll("audio");
+          const next = audios[index + 1];
+          if (next) next.play();
+        });
+
+        list.appendChild(li);
       });
-  </script>
+    })
+    .catch(err => {
+      console.error("Erreur chargement top :", err);
+      document.getElementById("topList").innerHTML = "<li>Erreur de chargement.</li>";
+    });
+</script>
+
 </body>
 </html>

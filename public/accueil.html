@@ -282,18 +282,21 @@
 <script>
   let allMusics = [];
 
+  // 1. Récupère et affiche la liste des musiques
   async function fetchMusics() {
     try {
-      const response = await fetch('/api/musics');
-      const result = await response.json();
-      allMusics = result.musics || [];
+      const res  = await fetch('/api/musics');
+      const json = await res.json();
+      allMusics   = json.musics || [];
       allMusics.sort((a, b) => (b.listenCount || 0) - (a.listenCount || 0));
       renderMusics(allMusics);
     } catch (err) {
-      document.getElementById("musicList").innerHTML = `<li>Erreur : ${err.message}</li>`;
+      document.getElementById("musicList").innerHTML =
+        `<li>Erreur chargement : ${err.message}</li>`;
     }
   }
 
+  // 2. Génère le HTML et (ré)attache tous les events
   function renderMusics(list) {
     const ul = document.getElementById("musicList");
     ul.innerHTML = "";
@@ -303,127 +306,142 @@
       li.innerHTML = `
         <img class="cover" src="${music.cover}" alt="Couverture" />
         <strong>${music.title}</strong>
-        <small>Par ${music.uploader_name || 'Utilisateur inconnu'}</small>
-        <div class="meta">🎵 Genre : ${music.category} • 📅 Ajoutée le ${music.uploadedAt?.split("T")[0]}</div>
-        <audio controls controlsList="nodownload" src="${music.path}" data-path="${music.path}"></audio>
-        <a class="download-link" href="${music.path}" download data-path="${music.path}">Télécharger</a>
-        <button class="favBtn" data-path="${music.path}">💙 Ajouter aux favoris</button>
+        <small>Par ${music.uploader_name || 'Anonyme'}</small>
+        <div class="meta">
+          🎵 ${music.category} • 📅 ${music.uploadedAt?.split("T")[0]}
+        </div>
+        <audio controls controlsList="nodownload"
+               src="${music.path}" data-path="${music.path}"></audio>
+        <a class="download-link"
+           href="${music.path}" download 
+           data-path="${music.path}">Télécharger</a>
+        <button class="favBtn" data-path="${music.path}">
+          💙 Ajouter aux favoris
+        </button>
         <div class="counters">
-          Écoute : <span class="listenCount">${music.listenCount || 0}</span> fois —
-          Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
+          Écoute : <span class="listenCount">${music.listenCount||0}</span> fois —
+          Téléchargement : <span class="downloadCount">${music.downloadCount||0}</span> fois
         </div>
       `;
       ul.appendChild(li);
     });
 
-    const allAudios = ul.querySelectorAll("audio");
-    allAudios.forEach(current => {
-      let listenTimer = null;
+    attachAudioHandlers();
+    attachDownloadHandlers();
+  }
 
-      current.addEventListener("play", () => {
-        allAudios.forEach(other => {
-          if (other !== current) {
-            other.pause();
-            other.dataset.listened = "false";
-          }
-        });
+  // 3. Après 15s de lecture, appelle /api/listen + autoplay next
+  function attachAudioHandlers() {
+    const audios = document.querySelectorAll("#musicList audio");
+    audios.forEach((audio, idx) => {
+      let timer;
 
-        listenTimer = setTimeout(() => {
-          console.log("⏱ 15 secondes de lecture — envoi écoute");
-
-          if (!current.dataset.listened) {
-            const path = current.dataset.path;
-            fetch("/api/listen", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ path })
-            })
-            .then(res => res.json())
-            .then(data => {
-              if (data.status === "success") {
-                current.dataset.listened = "true";
-                const counter = current.closest("li").querySelector(".listenCount");
-                if (counter) counter.textContent = data.count;
-              }
-            })
-            .catch(err => {
-              console.error("Erreur écoute :", err);
-            });
-          }
+      audio.addEventListener("play", () => {
+        // stoppe les autres
+        audios.forEach(a => { if (a !== audio) a.pause(); });
+        clearTimeout(timer);
+        // relance le timer de comptage
+        timer = setTimeout(() => {
+          const path = audio.dataset.path;
+          fetch("/api/listen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path })
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === "success") {
+              const span = audio.closest("li")
+                               .querySelector(".listenCount");
+              if (span) span.textContent = data.count;
+            }
+          })
+          .catch(console.error);
         }, 15000);
       });
 
-      current.addEventListener("pause", () => clearTimeout(listenTimer));
-      current.addEventListener("ended", () => clearTimeout(listenTimer));
-    });
+      audio.addEventListener("pause", () => clearTimeout(timer));
 
-    const allDownloads = ul.querySelectorAll(".download-link");
-    allDownloads.forEach(link => {
-      link.addEventListener("click", () => {
-        const path = link.dataset.path;
+      audio.addEventListener("ended", () => {
+        clearTimeout(timer);
+        // lance le suivant s’il existe
+        if (idx + 1 < audios.length) {
+          audios[idx + 1].play();
+        }
+      });
+    });
+  }
+
+  // 4. Handler pour les téléchargements
+  function attachDownloadHandlers() {
+    const links = document.querySelectorAll(".download-link");
+    links.forEach(a => {
+      a.addEventListener("click", () => {
+        const path = a.dataset.path;
         fetch("/api/download", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ path })
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
           if (data.status === "success") {
-            const counter = link.closest("li").querySelector(".downloadCount");
-            if (counter) counter.textContent = data.count;
+            const span = a.closest("li")
+                         .querySelector(".downloadCount");
+            if (span) span.textContent = data.count;
           }
         })
-        .catch(err => {
-          console.error("Erreur téléchargement :", err);
-        });
+        .catch(console.error);
       });
     });
   }
 
-  document.getElementById("searchInput").addEventListener("input", e => {
-    const query = e.target.value.trim().toLowerCase();
-    const filtered = allMusics.filter(m => m.title.toLowerCase().includes(query));
-    renderMusics(filtered);
-  });
-
-  document.addEventListener("click", function (e) {
-    if (e.target.classList.contains("favBtn")) {
-      const musicPath = e.target.dataset.path;
-      fetch("/api/add-favorite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: musicPath })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          e.target.textContent = "💙 Ajouté";
-          e.target.disabled = true;
-        }
-      })
-      .catch(err => {
-        console.error("Erreur ajout favori :", err);
-      });
-    }
-  });
-
-  fetch("/api/top")
-    .then(res => res.json())
-    .then(data => {
-      const list = document.getElementById("topList");
-      if (!data.top || data.top.length === 0) {
-        list.innerHTML = "<li>Aucune musique populaire trouvée.</li>";
-        return;
-      }
-
-      list.innerHTML = data.top.map(m => 
-        `<li>${m.title} – ${m.listenCount || 0} écoutes</li>`
-      ).join("");
+  // 5. Barre de recherche filtre en temps réel
+  document.getElementById("searchInput")
+    .addEventListener("input", e => {
+      const q = e.target.value.trim().toLowerCase();
+      const filtered = allMusics.filter(m =>
+        m.title.toLowerCase().includes(q)
+      );
+      renderMusics(filtered);
     });
 
+  // 6. Boutons favoris
+  document.addEventListener("click", e => {
+    if (!e.target.classList.contains("favBtn")) return;
+    const path = e.target.dataset.path;
+    fetch("/api/add-favorite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === "success") {
+        e.target.textContent = "💙 Ajouté";
+        e.target.disabled    = true;
+      }
+    })
+    .catch(console.error);
+  });
+
+  // 7. Top 5 musiques
+  fetch("/api/top")
+    .then(r => r.json())
+    .then(data => {
+      const list = document.getElementById("topList");
+      if (!data.top || !data.top.length) {
+        list.innerHTML = "<li>Aucun hit pour le moment.</li>";
+      } else {
+        list.innerHTML = data.top.map(m =>
+          `<li>${m.title} – ${m.listenCount||0} écoutes</li>`
+        ).join("");
+      }
+    });
+
+  // 8. Kick-off
   fetchMusics();
 </script>
-
 
 </body>
 </html>

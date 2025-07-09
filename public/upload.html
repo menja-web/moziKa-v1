@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <!-- ← AJOUTE CE MÉTA -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.css">
   <title>Uploader une musique - MoziKa</title>
   <style>
     body {
@@ -151,38 +151,99 @@
   </form>
 
   <!-- Script 1 : récupération depuis localStorage -->
+  <!-- AJOUT : genres supplémentaires et barre de recherche -->
+<script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.js"></script>
   <script>
-    const user = JSON.parse(localStorage.getItem("moziKaUser"));
-    if (user) {
-      const inp = document.getElementById("uploader_email");
-      if (inp) inp.value = user.email;
-    }
+    // Liste complète des genres
+    const genreList = [
+      "Rap", "Pop", "Rock", "Jazz", "Classique", "Instrumental", "Gospel", "Autre",
+      "Afrobeat", "Amapiano", "Reggae", "Kilalaky", "Tapiky", "Slow",
+      "Danchall", "Afropop", "Trap", "Drill", "Slam", "Acoustic",
+      "Hira Gasy", "Vakodrazana", "Autre"
+    ];
 
-    const form = document.getElementById("uploadForm");
-    const msg  = document.getElementById("uploadMessage");
+    const category = document.getElementById("category");
+    category.innerHTML = '<option value="">-- Choisir un genre --</option>';
+    genreList.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g;
+      opt.textContent = g;
+      category.appendChild(opt);
+    });
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      msg.textContent = "";
-      const formData = new FormData(form);
+    // Active SlimSelect pour barre de recherche intégrée
+    new SlimSelect({
+      select: '#category',
+      searchPlaceholder: '🔍 Rechercher un genre…',
+      searchText: 'Aucun genre trouvé',
+      placeholder: 'Choisis ton style musical',
+      allowDeselect: true
+    });
 
-      const res  = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      msg.textContent = data.message;
-      msg.style.color = data.status === "success" ? "green" : "red";
+    // Affiche un champ personnalisé quand "Autre" est sélectionné
+    const uploadForm  = document.getElementById("uploadForm");
+    const customBox   = document.createElement("div");
+    const customInput = document.createElement("input");
 
-      if (data.status === "success") {
-        setTimeout(() => {
-          window.location.href = "accueil.html";
-        }, 2000);
+    customBox.style.display       = "none";
+    customInput.type              = "text";
+    customInput.name              = "customGenre";
+    customInput.placeholder       = "Précise ton genre musical…";
+    customInput.style.width       = "100%";
+    customInput.style.margin      = "0 0 20px 0";
+    customInput.style.padding     = "10px";
+    customInput.style.border      = "1px solid #ccc";
+    customInput.style.borderRadius= "6px";
+    customInput.style.fontSize    = "1rem";
+
+    customBox.appendChild(customInput);
+    category.parentElement.insertBefore(customBox, category.nextSibling);
+
+    category.addEventListener("change", () => {
+      if (category.value === "Autre") {
+        customBox.style.display = "block";
+      } else {
+        customBox.style.display = "none";
+        customInput.value = "";
+      }
+    });
+
+    // Remplace category par customGenre si nécessaire à l'envoi
+    uploadForm.addEventListener("submit", e => {
+      if (category.value === "Autre" && customInput.value.trim() !== "") {
+        const hidden = document.createElement("input");
+        hidden.type  = "hidden";
+        hidden.name  = "category";
+        hidden.value = customInput.value.trim();
+        uploadForm.appendChild(hidden);
+        category.disabled = true;
       }
     });
   </script>
 
-  <!-- Script 2 : fetch de l’email serveur -->
+  <!-- Script : récupération depuis localStorage -->
+  <script>
+    const user = JSON.parse(localStorage.getItem("moziKaUser"));
+    if (user) {
+      document.getElementById("uploader_email").value = user.email;
+    }
+    const form = document.getElementById("uploadForm");
+    const msg  = document.getElementById("uploadMessage");
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      msg.textContent = "";
+      const data = new FormData(form);
+      const res  = await fetch("/api/upload", { method: "POST", body: data });
+      const json = await res.json();
+      msg.textContent = json.message;
+      msg.style.color = json.status === "success" ? "green" : "red";
+      if (json.status === "success") {
+        setTimeout(() => window.location.href = "accueil.html", 2000);
+      }
+    });
+  </script>
+
+  <!-- Script : fetch de l’email serveur -->
   <script>
     fetch("/api/user-email")
       .then(res => res.json())
@@ -190,9 +251,8 @@
         const inp = document.getElementById("uploader_email");
         if (inp) inp.value = data.email || "";
       })
-      .catch(err => {
-        console.error("Erreur chargement email :", err);
-      });
+      .catch(err => console.error("Erreur chargement email :", err));
   </script>
+
 </body>
 </html>
