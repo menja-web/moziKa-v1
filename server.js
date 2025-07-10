@@ -16,6 +16,9 @@ const bcrypt     = require('bcrypt')
 const crypto     = require('crypto')
 const cors       = require('cors')
 
+// 🔹 Import des modèles MongoDB (ajouté)
+const { User, Music } = require('./models')
+
 // 3) Initialisation de l’app
 const app    = express()
 const PORT   = process.env.PORT || 3000
@@ -30,58 +33,51 @@ app.use(cors({
   credentials: true
 }))
 
+// 🔹 Ajout des middlewares nécessaires
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
 // 6) Connexion à MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ Erreur MongoDB :', err))
 
-// 7) Préparation des dossiers & fichiers JSON
-const uploadDir    = path.join(__dirname, 'uploads')
-const dataDir      = path.join(__dirname, 'data')
-const usersFile    = path.join(__dirname, 'users.json')
-const musicsFile   = path.join(__dirname, 'musics.json')
-const resetFile    = path.join(__dirname, 'resetTokens.json')
-const creatorsFile = path.join(dataDir, 'createurs.json')
-
-// Création si nécessaire
-;[uploadDir, dataDir].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d) })
-;[usersFile, musicsFile, resetFile, creatorsFile].forEach(f => {
-  if (!fs.existsSync(f)) fs.writeFileSync(f, JSON.stringify([]))
-})
-
-// Chargement initial en mémoire
-let musics = JSON.parse(fs.readFileSync(musicsFile))
-
-// 8) Middlewares globaux
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-
-
-
+// 🔹 Sessions persistantes (avec MongoStore)
 app.use(session({
-  secret:            process.env.SESSION_SECRET || 'mozika-secret-dev',
-  resave:            false,
+  secret: process.env.SESSION_SECRET,
+  resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl:    process.env.MONGODB_URI,
-    ttl:         24 * 60 * 60,
-    autoRemove:  'native'
-  }),
   cookie: {
-    maxAge:   24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure:   isProd,               // secure = true seulement en production (HTTPS)
-    sameSite: isProd ? 'None' : 'Lax'  // 'None' en prod, 'Lax' sinon
-  }
+    sameSite: isProd ? 'None' : 'Lax',
+    secure: isProd
+  },
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native'
+  })
 }))
 
-// 9) Fichiers statiques
-app.use(express.static(path.join(__dirname, 'public')))
+// 🔹 Gestion des dossiers static si nécessaire (uploads, public)
+const uploadDir = path.join(__dirname, 'uploads')
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir)
+
+const dataDir    = path.join(__dirname, 'data')
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir)
+
+const musicsFile = path.join(dataDir, 'musics.json')
+let musics = []
+if (fs.existsSync(musicsFile)) {
+  musics = JSON.parse(fs.readFileSync(musicsFile))
+}
+
+// 7) Fichiers statiques
 app.use('/uploads', express.static(uploadDir))
 app.use('/data',    express.static(dataDir))
+app.use('/public',  express.static(path.join(__dirname, 'public')))
 
-// 10) Multer – upload musique & cover
+// 8) Multer – upload musique & cover
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename:    (req, file, cb) => {
@@ -93,13 +89,14 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage })
 
-// 11) Middleware de protection
+// 9) Middleware de protection
 function requireLogin(req, res, next) {
   if (!req.session.user) {
     return res.status(403).json({ status: "error", message: "Non connecté." })
   }
   next()
 }
+
 
 // ────────────────────────────────────
 //           ROUTES API
@@ -189,6 +186,15 @@ app.get('/api/get-session', (req, res) => {
 // 6) Toutes les musiques
 app.get('/api/musics', (req, res) => {
   res.json({ musics })
+  
+})
+// 7) Vérifie si le code est encore actif en session
+app.get('/api/session-check', (req, res) => {
+  if (req.session.pendingUser && req.session.verificationCode) {
+    return res.json({ status: "active" })
+  } else {
+    return res.json({ status: "expired" })
+  }
 })
 
 // 7) Upload musique + cover

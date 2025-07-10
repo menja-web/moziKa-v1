@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vérification de compte | MoziKa</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; background: #fdfdfd; }
+    input { margin: 1rem 0; padding: 0.5rem; width: 100%; font-size: 1rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+    #message { margin-top: 1rem; color: green; }
+  </style>
+</head>
+<body>
+  <h2>🔐 Entrez votre code de vérification</h2>
+  <input type="text" id="codeInput" placeholder="Code à 6 chiffres..." />
+  <button onclick="validerCode()">Valider</button>
+  <div id="message"></div>
+
+  <script>
+    // ✅ Vérifie si la session est active au retour depuis Gmail (mobile)
+    fetch('/api/session-check', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'expired') {
+          const saved = localStorage.getItem('pendingUser')
+          if (saved) {
+            alert("Session expirée. Veuillez recommencer l'inscription.")
+            window.location.href = "/register.html"
+          } else {
+            window.location.href = "/register.html"
+          }
+        }
+      })
+
+    // 📤 Envoi du code pour valider l'inscription
+    function validerCode() {
+      const code = document.getElementById('codeInput').value
+      fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code })
+      })
+        .then(res => res.json())
+        .then(data => {
+          const msg = document.getElementById('message')
+          if (data.status === "success") {
+            msg.innerText = "✅ Inscription validée !"
+            localStorage.removeItem('pendingUser')
+            setTimeout(() => window.location.href = "/accueil.html", 1500)
+          } else {
+            msg.innerText = "❌ " + data.message
+            msg.style.color = "red"
+          }
+        })
+    }
+  </script>
+</body>
+</html>
