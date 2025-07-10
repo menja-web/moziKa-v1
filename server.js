@@ -29,6 +29,10 @@ const musicsFile    = path.join(__dirname, 'musics.json');
 const resetFile     = path.join(__dirname, 'resetTokens.json');
 const creatorsFile  = path.join(dataDir, 'createurs.json');
 
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 // Création si nécessaire
 [uploadDir, dataDir].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
@@ -40,6 +44,12 @@ const creatorsFile  = path.join(dataDir, 'createurs.json');
 });
 
 let musics = JSON.parse(fs.readFileSync(musicsFile));
+const cors = require('cors');
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'https://mozika-v1-2.onrender.com',
+  credentials: true
+}));
 
 // --- 3. Middlewares globaux ---
 app.use(express.json());
