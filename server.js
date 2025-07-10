@@ -57,20 +57,22 @@ let musics = JSON.parse(fs.readFileSync(musicsFile))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+
+
 app.use(session({
   secret:            process.env.SESSION_SECRET || 'mozika-secret-dev',
   resave:            false,
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl:    process.env.MONGODB_URI,
-    ttl:         24 * 60 * 60,      // 1 jour en secondes
+    ttl:         24 * 60 * 60,
     autoRemove:  'native'
   }),
   cookie: {
-    maxAge:   24 * 60 * 60 * 1000,   // 1 jour en ms
+    maxAge:   24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure:   isProd,               // HTTPS only en prod
-    sameSite: isProd ? 'None' : 'Lax'
+    secure:   isProd,               // secure = true seulement en production (HTTPS)
+    sameSite: isProd ? 'None' : 'Lax'  // 'None' en prod, 'Lax' sinon
   }
 }))
 
@@ -176,14 +178,13 @@ app.get('/logout', (req, res) => {
 
 // 5) Session & user info
 app.get('/api/get-session', (req, res) => {
+  console.log('Session dans /api/get-session:', req.session);
   if (!req.session.user) {
-    return res.status(401).json({ status: "error", message: "Non connecté." })
+    return res.status(401).json({ status: "error", message: "Non connecté." });
   }
-  res.json({ status: "success", user: req.session.user })
-})
-app.get('/api/user-email', (req, res) => {
-  res.json({ email: req.session.user?.email || "" })
-})
+  res.json({ status: "success", user: req.session.user });
+});
+
 
 // 6) Toutes les musiques
 app.get('/api/musics', (req, res) => {
@@ -252,9 +253,6 @@ app.post('/api/download', requireLogin, (req, res) => {
   res.json({ status: "success", count: m.downloadCount })
 })
 
-// 10) Suppression de musique (corrigée)
-// … au-dessus, rien ne change …
-
 // 10) Suppression de musique (patch corrigé)
 app.post('/api/delete', requireLogin, (req, res) => {
   console.log('[DELETE] user:', req.session.user, 'body:', req.body)
@@ -299,9 +297,6 @@ app.post('/api/delete', requireLogin, (req, res) => {
 
   return res.json({ status: "success", message: "Musique supprimée." })
 })
-
-// … le reste du server.js reste inchangé …
-
 
 // 11) Favoris
 app.post('/api/add-favorite', requireLogin, (req, res) => {
@@ -413,17 +408,45 @@ app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   const creators = JSON.parse(fs.readFileSync(creatorsFile))
   const idx      = creators.findIndex(c => c.username === username)
   if (idx !== -1) {
-    creators[idx].photo = './faces/' + newName
-    fs.writeFileSync(creatorsFile, JSON.stringify(creators, null, 2))
-    return res.json({ success: true, newPath: './faces/' + newName })
+    creators[idx].photo = `/faces/${newName}`
+  } else {
+    creators.push({ username, photo: `/faces/${newName}` })
   }
-  res.json({ success: false })
+  fs.writeFileSync(creatorsFile, JSON.stringify(creators, null, 2))
+  res.json({ success: true, photo: `/faces/${newName}` })
 })
 
-// 18) Route liste créateurs externe
-app.use(require('./routes/get-createurs'))
+// 18) Liste des créateurs (photo)
+app.get('/api/creators', (req, res) => {
+  const creators = JSON.parse(fs.readFileSync(creatorsFile))
+  res.json(creators)
+})
 
-// 19) Démarrage du serveur
+// 19) Ajouter musique par URL (pas de fichier)
+app.post('/api/add-music-url', requireLogin, (req, res) => {
+  const { title, category, url, coverUrl } = req.body
+  if (!title || !category || !url || !coverUrl) {
+    return res.status(400).json({ status: "error", message: "Champs manquants." })
+  }
+  const newMusic = {
+    title,
+    category,
+    uploader_email: req.session.user.email,
+    uploader_name:  req.session.user.username,
+    path:           url,
+    cover:          coverUrl,
+    listenCount:    0,
+    downloadCount:  0,
+    listeners:      [],
+    downloaders:    [],
+    uploadedAt:     new Date().toISOString()
+  }
+  musics.push(newMusic)
+  fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
+  res.json({ status: "success", music: newMusic })
+})
+
+// 20) Serveur - démarrage
 app.listen(PORT, () => {
-  console.log(`🎵 MoziKa actif sur http://localhost:${PORT}`)
+  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`)
 })

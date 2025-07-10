@@ -168,24 +168,46 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 1️⃣ Récupérer la session
-  fetch("/api/get-session")
-    .then(res => res.json())
-    .then(data => {
-      if (data.status !== "success") {
-        return void (window.location.href = "login.html");
-      }
-      user = data.user;
-      localStorage.setItem("moziKaUser", JSON.stringify(user));
-      document.getElementById("username").textContent = user.username;
-      document.getElementById("email").textContent    = user.email;
-      loadUserMusics();
-      loadUserFavorites();
-    })
-    .catch(err => {
-      console.error("Erreur session :", err);
+fetch("/api/get-session", {
+  credentials: "include"  // << important pour envoyer les cookies de session !
+})
+.then(res => res.json())
+.then(data => {
+  if (data.status !== "success") {
+    return void (window.location.href = "login.html");
+  }
+  user = data.user;
+  localStorage.setItem("moziKaUser", JSON.stringify(user));
+  document.getElementById("username").textContent = user.username;
+  document.getElementById("email").textContent    = user.email;
+  loadUserMusics();
+  loadUserFavorites();
+})
+.catch(err => {
+  console.error("Erreur session :", err);
+  window.location.href = "login.html";
+});
+
+fetch("/api/get-session", {
+  credentials: "include"  // important pour envoyer les cookies de session
+})
+  .then(res => res.json())
+  .then(data => {
+    if (data.status !== "success") {
       window.location.href = "login.html";
-    });
+      return;
+    }
+    user = data.user;
+    localStorage.setItem("moziKaUser", JSON.stringify(user));
+    document.getElementById("username").textContent = user.username;
+    document.getElementById("email").textContent    = user.email;
+    loadUserMusics();
+    loadUserFavorites();
+  })
+  .catch(err => {
+    console.error("Erreur session :", err);
+    window.location.href = "login.html";
+  });
 
   // On garde en mémoire tous les musics (pour syncListenCount)
   fetch("/api/musics")
