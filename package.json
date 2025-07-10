@@ -1,4 +1,16 @@
 {
+  "name": "mozika",
+  "version": "1.0.0",
+  "description": "MoziKa – plateforme de partage et streaming musical",
+  "main": "server.js",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "build": "npm install",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
@@ -11,15 +23,12 @@
     "multer": "^2.0.1",
     "nodemailer": "^7.0.4"
   },
-  "name": "mozika",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "keywords": [],
+  "keywords": [
+    "music",
+    "streaming",
+    "express",
+    "nodejs"
+  ],
   "author": "",
-  "license": "ISC",
-  "description": ""
+  "license": "ISC"
 }
