@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: MoziKa-v1-2        # le nom EXACT de ton service Render
+    name: MoziKa-v1-2        # ← EXACTEMENT comme dans ton Dashboard Render
     env: node
     plan: free
     buildCommand: npm install
