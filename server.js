@@ -16,9 +16,6 @@ const bcrypt     = require('bcrypt')
 const crypto     = require('crypto')
 const cors       = require('cors')
 
-// 🔹 Import des modèles MongoDB (ajouté)
-const { User, Music } = require('./models')
-
 // 3) Initialisation de l’app
 const app    = express()
 const PORT   = process.env.PORT || 3000
@@ -33,51 +30,73 @@ app.use(cors({
   credentials: true
 }))
 
-// 🔹 Ajout des middlewares nécessaires
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-
 // 6) Connexion à MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ Erreur MongoDB :', err))
 
-// 🔹 Sessions persistantes (avec MongoStore)
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    sameSite: isProd ? 'None' : 'Lax',
-    secure: isProd
-  },
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60,
-    autoRemove: 'native'
-  })
-}))
+// 7) Préparation des dossiers & fichiers JSON
+const uploadDir    = path.join(__dirname, 'uploads')
+const dataDir      = path.join(__dirname, 'data')
+const usersFile    = path.join(__dirname, 'users.json')
+const musicsFile   = path.join(dataDir,   'musics.json')
+const resetFile    = path.join(__dirname, 'resetTokens.json')
+const creatorsFile = path.join(dataDir,   'createurs.json')
+const backupDir    = path.join(__dirname, 'backups')
 
-// 🔹 Gestion des dossiers static si nécessaire (uploads, public)
-const uploadDir = path.join(__dirname, 'uploads')
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir)
+// création si nécessaire
+;[uploadDir, dataDir, backupDir].forEach(d => {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true })
+})
+;[usersFile, musicsFile, resetFile, creatorsFile].forEach(f => {
+  if (!fs.existsSync(f)) fs.writeFileSync(f, JSON.stringify([]))
+})
 
-const dataDir    = path.join(__dirname, 'data')
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir)
+// Chargement initial en mémoire
+let musics = JSON.parse(fs.readFileSync(musicsFile))
 
-const musicsFile = path.join(dataDir, 'musics.json')
-let musics = []
-if (fs.existsSync(musicsFile)) {
-  musics = JSON.parse(fs.readFileSync(musicsFile))
+// utilitaire de sauvegarde (backup) avant chaque déploiement manuel
+function exportDataBackup() {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const out = {
+    users:    JSON.parse(fs.readFileSync(usersFile)),
+    musics:   musics,
+    tokens:   JSON.parse(fs.readFileSync(resetFile)),
+    creators: JSON.parse(fs.readFileSync(creatorsFile))
+  }
+  const dest = path.join(backupDir, `backup-${timestamp}.json`)
+  fs.writeFileSync(dest, JSON.stringify(out, null, 2))
+  console.log(`💾 Backup créé : ${dest}`)
 }
 
-// 7) Fichiers statiques
+// 8) Middlewares globaux
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+app.use(session({
+  secret:            process.env.SESSION_SECRET || 'mozika-secret-dev',
+  resave:            false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl:    process.env.MONGODB_URI,
+    ttl:         24 * 60 * 60,
+    autoRemove:  'native'
+  }),
+  cookie: {
+    maxAge:   24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure:   isProd,
+    sameSite: isProd ? 'None' : 'Lax'
+  }
+}))
+
+// 9) Fichiers statiques
+app.use(express.static(path.join(__dirname, 'public')))
 app.use('/uploads', express.static(uploadDir))
 app.use('/data',    express.static(dataDir))
-app.use('/public',  express.static(path.join(__dirname, 'public')))
 
-// 8) Multer – upload musique & cover
+// 10) Multer – upload musique & cover
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename:    (req, file, cb) => {
@@ -89,14 +108,13 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage })
 
-// 9) Middleware de protection
+// 11) Middleware de protection
 function requireLogin(req, res, next) {
   if (!req.session.user) {
     return res.status(403).json({ status: "error", message: "Non connecté." })
   }
   next()
 }
-
 
 // ────────────────────────────────────
 //           ROUTES API
@@ -145,7 +163,10 @@ app.post('/api/register', (req, res) => {
     joinedAt: new Date().toISOString(),
     favorites: []
   })
+  // sauvegarde & backup
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
+  exportDataBackup()
+
   req.session.user = { username: pending.username, email: pending.email }
   delete req.session.pendingUser
   delete req.session.verificationCode
@@ -175,29 +196,26 @@ app.get('/logout', (req, res) => {
 
 // 5) Session & user info
 app.get('/api/get-session', (req, res) => {
-  console.log('Session dans /api/get-session:', req.session);
   if (!req.session.user) {
-    return res.status(401).json({ status: "error", message: "Non connecté." });
+    return res.status(401).json({ status: "error", message: "Non connecté." })
   }
-  res.json({ status: "success", user: req.session.user });
-});
-
+  res.json({ status: "success", user: req.session.user })
+})
 
 // 6) Toutes les musiques
 app.get('/api/musics', (req, res) => {
   res.json({ musics })
-  
 })
-// 7) Vérifie si le code est encore actif en session
+
+// [AJOUT] 7) Vérifier la session en cours (mobile subscription flow)
 app.get('/api/session-check', (req, res) => {
   if (req.session.pendingUser && req.session.verificationCode) {
     return res.json({ status: "active" })
-  } else {
-    return res.json({ status: "expired" })
   }
+  return res.json({ status: "expired" })
 })
 
-// 7) Upload musique + cover
+// 8) Upload musique + cover
 app.post(
   '/api/upload',
   requireLogin,
@@ -227,11 +245,12 @@ app.post(
     }
     musics.push(newMusic)
     fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
+    exportDataBackup()
     res.json({ status: "success", music: newMusic })
   }
 )
 
-// 8) Écoute unique
+// 9) Écoute unique
 app.post('/api/listen', requireLogin, (req, res) => {
   const { path } = req.body
   const m        = musics.find(m => m.path === path)
@@ -241,11 +260,12 @@ app.post('/api/listen', requireLogin, (req, res) => {
     m.listenCount++
     m.listeners.push(req.session.user.email)
     fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
+    exportDataBackup()
   }
   res.json({ status: "success", count: m.listenCount })
 })
 
-// 9) Download unique
+// 10) Download unique
 app.post('/api/download', requireLogin, (req, res) => {
   const { path } = req.body
   const m        = musics.find(m => m.path === path)
@@ -255,56 +275,33 @@ app.post('/api/download', requireLogin, (req, res) => {
     m.downloadCount++
     m.downloaders.push(req.session.user.email)
     fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
+    exportDataBackup()
   }
   res.json({ status: "success", count: m.downloadCount })
 })
 
-// 10) Suppression de musique (patch corrigé)
+// 11) Suppression de musique
 app.post('/api/delete', requireLogin, (req, res) => {
-  console.log('[DELETE] user:', req.session.user, 'body:', req.body)
-
   const musicPath = req.body.path
-  if (!musicPath) {
-    return res
-      .status(400)
-      .json({ status: "error", message: "Champ `path` manquant." })
-  }
-
-  // On recherche l’index de la musique à supprimer
   const idx = musics.findIndex(item =>
     item.path === musicPath &&
     item.uploader_email === req.session.user.email
   )
   if (idx === -1) {
-    return res
-      .status(404)
-      .json({ status: "error", message: "Musique non trouvée ou non autorisée." })
+    return res.status(404).json({ status: "error", message: "Musique non trouvée ou non autorisée." })
   }
-
-  // Suppression des fichiers audio + cover
   const target = musics[idx]
   for (const rel of [target.path, target.cover]) {
-    const relClean = rel.replace(/^\/+/, '')            // supprime le slash initial
-    const fullPath = path.join(uploadDir, relClean)
-    if (fs.existsSync(fullPath)) {
-      try {
-        fs.unlinkSync(fullPath)
-        console.log('[DELETE] fichier supprimé:', fullPath)
-      } catch (err) {
-        console.error('[DELETE] erreur unlinkSync:', err)
-      }
-    }
+    const fullPath = path.join(uploadDir, rel.replace(/^\/+/, ''))
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath)
   }
-
-  // On retire l’entrée de la liste et on écrit dans le JSON
   musics.splice(idx, 1)
   fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
-  console.log('[DELETE] musics.json mis à jour')
-
-  return res.json({ status: "success", message: "Musique supprimée." })
+  exportDataBackup()
+  res.json({ status: "success", message: "Musique supprimée." })
 })
 
-// 11) Favoris
+// 12) Favoris
 app.post('/api/add-favorite', requireLogin, (req, res) => {
   const { path } = req.body
   const users    = JSON.parse(fs.readFileSync(usersFile))
@@ -312,6 +309,7 @@ app.post('/api/add-favorite', requireLogin, (req, res) => {
   u.favorites    = u.favorites || []
   if (!u.favorites.includes(path)) u.favorites.push(path)
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
+  exportDataBackup()
   res.json({ status: "success" })
 })
 app.post('/api/remove-favorite', requireLogin, (req, res) => {
@@ -320,6 +318,7 @@ app.post('/api/remove-favorite', requireLogin, (req, res) => {
   const u        = users.find(u => u.email === req.session.user.email)
   u.favorites    = (u.favorites||[]).filter(p => p !== path)
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
+  exportDataBackup()
   res.json({ status: "success" })
 })
 app.get('/api/favorites', requireLogin, (req, res) => {
@@ -328,18 +327,18 @@ app.get('/api/favorites', requireLogin, (req, res) => {
   res.json({ status: "success", favorites: musics.filter(m => u.favorites?.includes(m.path)) })
 })
 
-// 12) Top 5 musiques
+// 13) Top 5 musiques
 app.get('/api/top', (req, res) => {
   const top = [...musics].sort((a,b) => b.listenCount - a.listenCount).slice(0,5)
   res.json({ top })
 })
 
-// 13) Musiques par utilisateur
+// 14) Musiques par utilisateur
 app.get('/api/musics-by-user', requireLogin, (req, res) => {
   res.json({ status: "success", musics: musics.filter(m => m.uploader_email === req.session.user.email) })
 })
 
-// 14) Reset password – request
+// 15) Reset password – request
 app.post('/api/reset-request', async (req, res) => {
   const { email } = req.body
   const users     = JSON.parse(fs.readFileSync(usersFile))
@@ -370,7 +369,7 @@ app.post('/api/reset-request', async (req, res) => {
   }
 })
 
-// 15) Reset password – change
+// 16) Reset password – change
 app.post('/api/reset-password', (req, res) => {
   const { token, newPassword } = req.body
   const tokens                 = JSON.parse(fs.readFileSync(resetFile))
@@ -384,10 +383,11 @@ app.post('/api/reset-password', (req, res) => {
   u.password = bcrypt.hashSync(newPassword, 10)
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
   fs.writeFileSync(resetFile, JSON.stringify(tokens.filter(t => t.token !== token), null, 2))
+  exportDataBackup()
   res.json({ status: "success", message: "Mot de passe modifié !" })
 })
 
-// 16) Change password (connecté)
+// 17) Change password (connecté)
 app.post('/api/change-password', requireLogin, (req, res) => {
   const { oldPassword, newPassword } = req.body
   const users = JSON.parse(fs.readFileSync(usersFile))
@@ -398,10 +398,11 @@ app.post('/api/change-password', requireLogin, (req, res) => {
   }
   u.password = bcrypt.hashSync(newPassword, 10)
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
+  exportDataBackup()
   res.json({ status: "success", message: "Mot de passe mis à jour !" })
 })
 
-// 17) Update photo profil
+// 18) Update photo profil
 const photoUpload = multer({ dest: path.join(__dirname, 'public/faces/') })
 app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   const { username } = req.body
@@ -419,16 +420,17 @@ app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
     creators.push({ username, photo: `/faces/${newName}` })
   }
   fs.writeFileSync(creatorsFile, JSON.stringify(creators, null, 2))
+  exportDataBackup()
   res.json({ success: true, photo: `/faces/${newName}` })
 })
 
-// 18) Liste des créateurs (photo)
+// 19) Liste des créateurs (photo)
 app.get('/api/creators', (req, res) => {
   const creators = JSON.parse(fs.readFileSync(creatorsFile))
   res.json(creators)
 })
 
-// 19) Ajouter musique par URL (pas de fichier)
+// 20) Ajouter musique par URL (pas de fichier)
 app.post('/api/add-music-url', requireLogin, (req, res) => {
   const { title, category, url, coverUrl } = req.body
   if (!title || !category || !url || !coverUrl) {
@@ -449,10 +451,32 @@ app.post('/api/add-music-url', requireLogin, (req, res) => {
   }
   musics.push(newMusic)
   fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
+  exportDataBackup()
   res.json({ status: "success", music: newMusic })
 })
 
-// 20) Serveur - démarrage
+
+// 21) Export complet des données (sauvegarde manuelle)
+app.get('/api/export-data', (req, res) => {
+  const users    = JSON.parse(fs.readFileSync(usersFile))
+  const tokens   = JSON.parse(fs.readFileSync(resetFile))
+  const creators = JSON.parse(fs.readFileSync(creatorsFile))
+  res.json({ users, musics, tokens, creators })
+})
+
+// 22) Page d’accueil
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+})
+// Export complet des données
+app.get('/api/export-data', (req, res) => {
+  const users    = JSON.parse(fs.readFileSync(usersFile))
+  const tokens   = JSON.parse(fs.readFileSync(resetFile))
+  const creators = JSON.parse(fs.readFileSync(creatorsFile))
+  // musics est déjà en mémoire
+  res.json({ users, musics, tokens, creators })
+})
+// 23) Démarrage du serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`)
 })
