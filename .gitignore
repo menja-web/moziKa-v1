@@ -1,1 +1,9 @@
-"node_modules/\nuploads/\ndata/\n.env\n.DS_Store\n.vscode/\n" 
+# dépendances et dossiers temporaires
+node_modules/
+npm/
+
+# fichiers uploadés
+uploads/
+
+# variables d’environnement
+.env
