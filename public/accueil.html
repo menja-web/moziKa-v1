@@ -276,7 +276,7 @@
   </footer>
 
   <script>
-    const baseUrl = 'http://localhost:3000';
+    const baseUrl = 'https://mozika-gasy.onrender.com';
     let currentUser = null;
     let allMusics = [];
     let favoritesSet = new Set();
@@ -297,7 +297,6 @@
     // 2) Charger les favoris
     async function loadFavorites() {
       if (!currentUser) return;
-      const baseUrl = "https://mozika-gasy.onrender.com";
       const res = await fetch(`${baseUrl}/api/favorites`, {
         credentials: 'include'
       });
@@ -309,7 +308,6 @@
 
     // 3) Récupérer et afficher les musiques
     async function fetchMusics() {
-      const baseUrl = "https://mozika-gasy.onrender.com";
       const res = await fetch(`${baseUrl}/api/musics`);
       const { musics } = await res.json();
       allMusics = musics || [];
@@ -361,7 +359,6 @@
           clearTimeout(timer);
           timer = setTimeout(() => {
             const id = audio.dataset.id;
-            const baseUrl = "https://mozika-gasy.onrender.com";
             fetch(`${baseUrl}/api/listen`, {
               method: "POST",
               credentials: 'include',
@@ -390,7 +387,6 @@
       document.querySelectorAll(".download-link").forEach(a => {
         a.addEventListener("click", () => {
           const id = a.dataset.id;
-          const baseUrl = "https://mozika-gasy.onrender.com";
           fetch(`${baseUrl}/api/download`, {
             method: "POST",
             credentials: 'include',
@@ -414,7 +410,6 @@
         btn.addEventListener("click", () => {
           const id = btn.dataset.id;
           const action = favoritesSet.has(id) ? 'remove-favorite' : 'add-favorite';
-          const baseUrl = "https://mozika-gasy.onrender.com";
           fetch(`${baseUrl}/api/${action}`, {
             method: "POST",
             credentials: 'include',
@@ -445,7 +440,6 @@
     });
 
     // 9) Top 5 musiques
-    const baseUrl = "https://mozika-gasy.onrender.com";
     fetch(`${baseUrl}/api/top`)
       .then(r => r.json())
       .then(data => {
