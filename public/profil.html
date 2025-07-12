@@ -167,86 +167,144 @@
       })
       .catch(() => window.location.href = "login.html");
 
-    // 🎵 Musiques uploadées
-    async function loadUserMusics() {
-      const res  = await fetch(`${baseUrl}/api/musics`);
-      const data = await res.json();
-      const list = document.getElementById("userMusics");
-      list.innerHTML = "";
+document.addEventListener("DOMContentLoaded", () => {
+  const baseUrl = ""; // ← à adapter si nécessaire
 
-      const musics = (data.musics || []).filter(m => m.uploader === user.username);
-      if (musics.length === 0) {
-        list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
-        return;
-      }
+  // 🎶 Musiques uploadées
+  async function loadUserMusics() {
+    const res = await fetch(`${baseUrl}/api/musics`, { credentials: "include" });
+    const data = await res.json();
+    const list = document.getElementById("userMusics");
+    list.innerHTML = "";
 
-      musics.forEach((music, idx) => {
-        const li = document.createElement("li");
-        li.className = "music-card";
-        li.innerHTML = `
-          <strong>${music.title}</strong> (${music.category})<br>
-          <img src="${music.cover}" alt="Couverture" width="100" /><br>
-          <audio controls controlsList="nodownload" src="${music.path}"
-                 style="width:100%; margin:10px 0;"></audio><br>
-          <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
-          📥 Téléchargements : ${music.downloadCount||0}<br>
-          <a class="download-link" href="${music.path}" download>📥 Télécharger</a>
-          <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
-          <hr>
-        `;
-        list.appendChild(li);
-
-        const player = li.querySelector("audio");
-        let timer, counted;
-        player.addEventListener("play", () => {
-          clearTimeout(timer);
-          counted = false;
-          timer = setTimeout(async () => {
-            if (!counted) {
-              const resp = await fetch(`${baseUrl}/api/update-listen`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: music._id })
-              });
-              const d = await resp.json();
-              if (d.listenCount !== undefined) {
-                counted = true;
-                li.querySelector(".listenCount").textContent = `🎧 Écoutes : ${d.listenCount}`;
-              }
-            }
-          }, 15000);
-        });
-      });
+    const musics = (data.musics || []).filter(m => m.uploader === user.username);
+    if (musics.length === 0) {
+      list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
+      return;
     }
 
-    // 💙 Favoris
-async function loadUserFavorites() {
-  const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
-  const data = await res.json();
-  const list = document.getElementById("userFavorites");
-  list.innerHTML = "";
+    musics.forEach((music) => {
+      const li = document.createElement("li");
+      li.className = "music-card";
+      li.innerHTML = `
+        <strong>${music.title}</strong> (${music.category})<br>
+        <img src="${music.cover}" alt="Couverture" width="100" /><br>
+        <audio controls controlsList="nodownload" src="${music.path}"
+               style="width:100%; margin:10px 0;"></audio><br>
+        <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
+        📥 Téléchargements : ${music.downloadCount || 0}<br>
+        <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+        <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
+        <hr>
+      `;
+      list.appendChild(li);
 
-  if (!data.favorites || data.favorites.length === 0) {
-    list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
-    return;
+      // ✅ Écoute > compteur après 15 sec
+      const player = li.querySelector("audio");
+      let timer, counted = false;
+      player.addEventListener("play", () => {
+        clearTimeout(timer);
+        counted = false;
+        timer = setTimeout(async () => {
+          if (!counted) {
+            const resp = await fetch(`${baseUrl}/api/update-listen`, {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: music._id })
+            });
+            const d = await resp.json();
+            if (d.listenCount !== undefined) {
+              counted = true;
+              li.querySelector(".listenCount").textContent = `🎧 Écoutes : ${d.listenCount}`;
+            }
+          }
+        }, 15000);
+      });
+
+      // ✅ Suppression avec confirmation
+      const deleteBtn = li.querySelector(".deleteBtn");
+      deleteBtn.addEventListener("click", () => {
+        const confirmBox = document.getElementById("confirmBox");
+        confirmBox.style.display = "block";
+
+        document.getElementById("confirmNo").onclick = () => {
+          confirmBox.style.display = "none";
+        };
+
+        document.getElementById("confirmYes").onclick = () => {
+          fetch(`${baseUrl}/api/music/delete`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ musicId: deleteBtn.dataset.id })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === "success") li.remove();
+              else alert("Erreur : " + data.message);
+              confirmBox.style.display = "none";
+            })
+            .catch(err => {
+              console.error("❌ Erreur suppression :", err);
+              confirmBox.style.display = "none";
+            });
+        };
+      });
+    });
   }
 
-  data.favorites.forEach((music) => {
-    const li = document.createElement("li");
-    li.className = "music-card";
-    li.innerHTML = `
-      <strong>${music.title}</strong> (${music.category})<br>
-      <img src="${music.cover}" alt="Couverture" width="100" /><br>
-      <audio controls controlsList="nodownload" src="${music.path}"
-             style="width:100%; margin:10px 0;"></audio><br>
-      <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
-      📥 Téléchargements : ${music.downloadCount||0}<br>
-      <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-      <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
-      <hr>
-    `;
-    list.appendChild(li);
+  // 💙 Musiques favorites
+  async function loadUserFavorites() {
+    const res = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
+    const data = await res.json();
+    const list = document.getElementById("userFavorites");
+    list.innerHTML = "";
+
+    if (!data.favorites || data.favorites.length === 0) {
+      list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
+      return;
+    }
+
+    data.favorites.forEach((music) => {
+      const li = document.createElement("li");
+      li.className = "music-card";
+      li.innerHTML = `
+        <strong>${music.title}</strong> (${music.category})<br>
+        <img src="${music.cover}" alt="Couverture" width="100" /><br>
+        <audio controls controlsList="nodownload" src="${music.path}"
+               style="width:100%; margin:10px 0;"></audio><br>
+        <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
+        📥 Téléchargements : ${music.downloadCount || 0}<br>
+        <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+        <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
+        <hr>
+      `;
+      list.appendChild(li);
+
+      const favBtn = li.querySelector(".removeFavBtn");
+      favBtn.addEventListener("click", () => {
+        fetch(`${baseUrl}/api/favorites/remove`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ musicId: favBtn.dataset.id })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === "success") li.remove();
+            else alert("Erreur : " + data.message);
+          })
+          .catch(err => console.error("❌ Erreur retrait favori :", err));
+      });
+    });
+  }
+
+  // 🔄 Charge les deux sections
+  loadUserMusics();
+  loadUserFavorites();
+});
+
 
     // ✅ Attache l'écouteur AU bouton INSÉRÉ
     const btn = li.querySelector(".removeFavBtn");
