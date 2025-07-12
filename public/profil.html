@@ -150,7 +150,9 @@
     });
 
     // Récupération de la session
-    fetch("/api/get-session", { credentials: "include" })
+    fetch("/api/get-session", {
+  credentials: "include"
+})
       .then(res => res.json())
       .then(data => {
         if (data.status !== "success" || !data.user) {

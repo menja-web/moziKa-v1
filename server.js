@@ -19,6 +19,12 @@ const app    = express();
 const PORT   = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+app.use(cors({
+  origin: "https://mozika-gasy.onrender.com",
+  credentials: true
+}));
+
+
 // ─── CORS & SESSION ──────────────────────────────────────
 app.set('trust proxy', 1);
 app.use(cors({
@@ -48,6 +54,7 @@ function requireLogin(req, res, next) {
   }
   next();
 }
+app.use("/api", require("./routes/user.route.js"));
 
 // ─── MONGODB CONNECTION ───────────────────────────────────
 mongoose.set('bufferCommands', false);

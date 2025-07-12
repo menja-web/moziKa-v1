@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Music = require('../models/Music');
+const requireLogin = require('../middleware/requireLogin'); // 🔐 middleware ajouté
 
-// 📥 GET toutes les musiques
+// 📥 GET toutes les musiques (publique)
 router.get('/music', async (req, res) => {
   try {
     const musics = await Music.find().populate('uploader', 'username');
@@ -13,7 +14,7 @@ router.get('/music', async (req, res) => {
   }
 });
 
-// 📥 GET une musique par ID
+// 📥 GET une musique par ID (publique)
 router.get('/music/:id', async (req, res) => {
   try {
     const music = await Music.findById(req.params.id).populate('uploader', 'username');
@@ -24,14 +25,14 @@ router.get('/music/:id', async (req, res) => {
   }
 });
 
-// ❌ DELETE une musique (sans middleware requireLogin)
-router.delete('/music/:id', async (req, res) => {
+// ❌ DELETE une musique (désormais protégée)
+router.delete('/music/:id', requireLogin, async (req, res) => {
   try {
     const music = await Music.findById(req.params.id);
     if (!music) return res.status(404).json({ status: 'error', message: 'Musique introuvable' });
 
-    // Optionnel : vérifier que l'uploader est bien celui connecté
-    if (music.uploader.toString() !== req.session.user?._id) {
+    // Vérifie que l'uploader correspond à la session actuelle
+    if (music.uploader.toString() !== req.session.user._id) {
       return res.status(403).json({ status: 'error', message: 'Accès refusé' });
     }
 
