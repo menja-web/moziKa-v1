@@ -154,6 +154,21 @@
       allowDeselect: true
     });
 
+  fetch("/api/get-session", { credentials: "include" })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status !== "success" || !data.user) {
+        window.location.href = "login.html"; // redirection si non connecté
+        return;
+      }
+
+      // Remplissage automatique de l’email
+      document.getElementById("uploader_email").value = data.user.email;
+
+      // Optionnel : afficher le nom d’utilisateur quelque part
+      // document.getElementById("username").textContent = data.user.username;
+    });
+    
     // 2) Champ personnalisé "Autre"
     const customBox = document.createElement("div");
     const customInput = document.createElement("input");
