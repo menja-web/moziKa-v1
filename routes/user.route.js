@@ -14,9 +14,25 @@ router.get("/get-session", (req, res) => {
 // ❌ Se déconnecter
 router.post("/logout", (req, res) => {
   req.session.destroy(err => {
-    if (err) return res.status(500).json({ status: "error", message: "Erreur lors de la déconnexion." });
+    if (err) {
+      return res.status(500).json({ status: "error", message: "Erreur lors de la déconnexion." });
+    }
     res.clearCookie("connect.sid");
     res.json({ status: "success", message: "Déconnecté avec succès." });
+  });
+});
+
+// 📊 Infos utilisateur
+router.get("/user-info", (req, res) => {
+  const user = req.session?.user;
+  if (!user) {
+    return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
+  }
+  res.json({
+    status: "success",
+    email: user.email,
+    username: user.username,
+    role: user.role || "auditeur"
   });
 });
 
@@ -25,34 +41,69 @@ router.post("/change-password", async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const userId = req.session?.user?._id;
 
+  if (!userId) {
+    return res.status(401).json({ status: "error", message: "Session invalide." });
+  }
+
   try {
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ status: "error", message: "Utilisateur introuvable." });
+    if (!user) {
+      return res.status(404).json({ status: "error", message: "Utilisateur introuvable." });
+    }
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return res.status(400).json({ status: "error", message: "Mot de passe actuel incorrect." });
+    if (!isMatch) {
+      return res.status(400).json({ status: "error", message: "Mot de passe actuel incorrect." });
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     res.json({ status: "success", message: "Mot de passe mis à jour avec succès." });
   } catch (err) {
-    console.error("Erreur changement mot de passe :", err);
+    console.error("❌ Erreur changement mot de passe :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
+router.get("/favorites", async (req, res) => {
+  const userId = req.session?.user?._id;
 
-// 📊 Infos utilisateur
-router.get("/user-info", (req, res) => {
-  const user = req.session?.user;
-  if (!user) return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
+  // 🚫 Session manquante
+  if (!userId) {
+    return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
+  }
 
-  res.json({
-    status: "success",
-    email: user.email,
-    username: user.username,
-    role: user.role || "auditeur"
-  });
+  try {
+    // 🔍 Récupération de l'utilisateur
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ status: "error", message: "Utilisateur introuvable." });
+    }
+
+    // ✅ On renvoie les favoris (tableau de musiques)
+    res.json({
+      status: "success",
+      favorites: user.favorites || []
+    });
+  } catch (err) {
+    console.error("❌ Erreur favorites :", err);
+    res.status(500).json({ status: "error", message: "Erreur serveur lors du chargement des favoris." });
+  }
+});
+router.post("/favorites/add", async (req, res) => {
+  const userId = req.session?.user?._id;
+  const { musicId } = req.body;
+
+  if (!userId) return res.status(401).json({ status: "error", message: "Non connecté." });
+  if (!musicId) return res.status(400).json({ status: "error", message: "ID musique manquant." });
+
+  try {
+    await User.findByIdAndUpdate(userId, { $addToSet: { favorites: musicId } });
+    res.json({ status: "success", message: "Musique ajoutée aux favoris." });
+  } catch (err) {
+    console.error("Erreur ajout favoris :", err);
+    res.status(500).json({ status: "error", message: "Erreur serveur." });
+  }
 });
 
 module.exports = router;
