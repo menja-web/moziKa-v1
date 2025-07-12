@@ -127,7 +127,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.js"></script>
   <script>
-    const baseUrl = 'http://localhost:3000';
+    const baseUrl = 'https://mozika-gasy.onrender.com';
     const uploadForm = document.getElementById('uploadForm');
     const uploaderEmailInput = document.getElementById('uploader_email');
     const uploadMessage = document.getElementById('uploadMessage');
@@ -206,7 +206,6 @@
     }
   });
     // 3) Récupérer l’email utilisateur
-    const baseUrl = "https://mozika-gasy.onrender.com";
 async function fetchUserInfo() {
   try {
     const res = await fetch(`${baseUrl}/api/get-session`, {
@@ -243,7 +242,6 @@ async function fetchUserInfo() {
       // Éviter un tableau, n'envoyer qu'une string
       formData.delete('category');
       formData.append('category', selectedGenre);
-        const baseUrl = "https://mozika-gasy.onrender.com";
       try {
         const res = await fetch(`${baseUrl}/api/upload`, {
           method: 'POST',
