@@ -7,3 +7,5 @@ uploads/
 
 # variables d’environnement
 .env
+resetTokens.json
+faces/

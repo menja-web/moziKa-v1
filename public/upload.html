@@ -2,9 +2,11 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <!-- ← AJOUTE CE MÉTA -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.css">
+  <link 
+    rel="stylesheet" 
+    href="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.css"
+  >
   <title>Uploader une musique - MoziKa</title>
   <style>
     body {
@@ -13,13 +15,11 @@
       padding: 40px;
       color: #333;
     }
-
     h1 {
       text-align: center;
       color: #4a90e2;
       margin-bottom: 30px;
     }
-
     form {
       max-width: 500px;
       margin: auto;
@@ -29,13 +29,11 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       position: relative;
     }
-
     label {
       display: block;
       margin-bottom: 10px;
       font-weight: 600;
     }
-
     input[type="text"],
     input[type="email"],
     select,
@@ -49,7 +47,6 @@
       font-size: 1rem;
       box-sizing: border-box;
     }
-
     button {
       background: #4a90e2;
       color: white;
@@ -57,16 +54,13 @@
       cursor: pointer;
       transition: background 0.3s ease;
     }
-
     button:hover {
       background: #357abd;
     }
-
     .nav {
       text-align: center;
       margin-bottom: 30px;
     }
-
     .nav a {
       display: inline-block;
       background-color: #4a90e2;
@@ -78,11 +72,9 @@
       font-weight: bold;
       transition: background 0.3s ease;
     }
-
     .nav a:hover {
       background-color: #357abd;
     }
-
     #uploadMessage {
       text-align: center;
       font-weight: bold;
@@ -90,23 +82,15 @@
       margin-top: 20px;
       transition: opacity 0.5s ease;
     }
-
-    /* Styles responsives pour mobile */
     @media (max-width: 600px) {
-      body {
-        padding: 20px;
-      }
-      form {
-        padding: 20px;
-      }
+      body { padding: 20px; }
+      form { padding: 20px; }
       .nav a {
         display: block;
         margin: 10px auto;
         width: 80%;
       }
-      h1 {
-        font-size: 1.5rem;
-      }
+      h1 { font-size: 1.5rem; }
       label, input, select, button {
         font-size: 0.95rem;
       }
@@ -115,7 +99,6 @@
 </head>
 <body>
   <h1>📤 Uploader une musique</h1>
-
   <div class="nav">
     <a href="accueil.html">Accueil</a>
   </div>
@@ -130,14 +113,6 @@
     <label for="category">Catégorie musicale</label>
     <select name="category" id="category" required>
       <option value="">-- Choisir un genre --</option>
-      <option value="Rap">Rap</option>
-      <option value="Pop">Pop</option>
-      <option value="Rock">Rock</option>
-      <option value="Jazz">Jazz</option>
-      <option value="Classique">Classique</option>
-      <option value="Instrumental">Instrumental</option>
-      <option value="Gospel">Gospel</option>
-      <option value="Autre">Autre</option>
     </select>
 
     <label for="musicFile">Fichier audio (.mp3)</label>
@@ -150,109 +125,117 @@
     <p id="uploadMessage"></p>
   </form>
 
-  <!-- Script 1 : récupération depuis localStorage -->
-  <!-- AJOUT : genres supplémentaires et barre de recherche -->
-<script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.1/dist/slimselect.min.js"></script>
   <script>
-    // Liste complète des genres
-    const genreList = [
-      "Rap", "Pop", "Rock", "Jazz", "Classique", "Instrumental", "Gospel", "Autre",
-      "Afrobeat", "Amapiano", "Reggae", "Kilalaky", "Tapiky", "Slow",
-      "Danchall", "Afropop", "Trap", "Drill", "Slam", "Acoustic",
-      "Hira Gasy", "Vakodrazana", "Autre"
-    ];
+    const baseUrl = 'http://localhost:3000';
+    const uploadForm = document.getElementById('uploadForm');
+    const uploaderEmailInput = document.getElementById('uploader_email');
+    const uploadMessage = document.getElementById('uploadMessage');
+    const categorySelect = document.getElementById('category');
 
-    const category = document.getElementById("category");
-    category.innerHTML = '<option value="">-- Choisir un genre --</option>';
-    genreList.forEach(g => {
-      const opt = document.createElement("option");
+    // 1) Initialiser la liste des genres
+    const genres = [
+      "Rap","Pop","Rock","Jazz","Classique","Instrumental","Gospel",
+      "Afrobeat","Amapiano","Reggae","Kilalaky","Tapiky","Slow",
+      "Danchall","Afropop","Trap","Drill","Slam","Acoustic",
+      "Hira Gasy","Vakodrazana","Autre"
+    ];
+    genres.forEach(g => {
+      const opt = document.createElement('option');
       opt.value = g;
       opt.textContent = g;
-      category.appendChild(opt);
+      categorySelect.appendChild(opt);
     });
-
-    // Active SlimSelect pour barre de recherche intégrée
     new SlimSelect({
       select: '#category',
+      placeholder: 'Choisis ton style musical',
       searchPlaceholder: '🔍 Rechercher un genre…',
       searchText: 'Aucun genre trouvé',
-      placeholder: 'Choisis ton style musical',
       allowDeselect: true
     });
 
-    // Affiche un champ personnalisé quand "Autre" est sélectionné
-    const uploadForm  = document.getElementById("uploadForm");
-    const customBox   = document.createElement("div");
+    // 2) Champ personnalisé "Autre"
+    const customBox = document.createElement("div");
     const customInput = document.createElement("input");
-
-    customBox.style.display       = "none";
-    customInput.type              = "text";
-    customInput.name              = "customGenre";
-    customInput.placeholder       = "Précise ton genre musical…";
-    customInput.style.width       = "100%";
-    customInput.style.margin      = "0 0 20px 0";
-    customInput.style.padding     = "10px";
-    customInput.style.border      = "1px solid #ccc";
-    customInput.style.borderRadius= "6px";
-    customInput.style.fontSize    = "1rem";
-
+    customBox.style.display = "none";
+    customInput.type = "text";
+    customInput.name = "category";
+    customInput.placeholder = "Précise ton genre musical…";
+    customInput.style.cssText = `
+      width:100%; margin-bottom:20px; padding:10px;
+      border:1px solid #ccc; border-radius:6px; font-size:1rem;
+    `;
     customBox.appendChild(customInput);
-    category.parentElement.insertBefore(customBox, category.nextSibling);
+    categorySelect.parentNode.insertBefore(customBox, categorySelect.nextSibling);
 
-    category.addEventListener("change", () => {
-      if (category.value === "Autre") {
+    categorySelect.addEventListener("change", () => {
+      if (categorySelect.value === "Autre") {
         customBox.style.display = "block";
+        categorySelect.disabled = true;
       } else {
         customBox.style.display = "none";
         customInput.value = "";
+        categorySelect.disabled = false;
       }
     });
 
-    // Remplace category par customGenre si nécessaire à l'envoi
-    uploadForm.addEventListener("submit", e => {
-      if (category.value === "Autre" && customInput.value.trim() !== "") {
-        const hidden = document.createElement("input");
-        hidden.type  = "hidden";
-        hidden.name  = "category";
-        hidden.value = customInput.value.trim();
-        uploadForm.appendChild(hidden);
-        category.disabled = true;
+    // 3) Récupérer l’email utilisateur
+    async function fetchUserInfo() {
+      try {
+        const res = await fetch(`${baseUrl}/api/user-info`, {
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error(`Statut ${res.status}`);
+        const { email } = await res.json();
+        uploaderEmailInput.value = email || '';
+      } catch (err) {
+        console.error('Erreur chargement profil :', err);
       }
-    });
-  </script>
-
-  <!-- Script : récupération depuis localStorage -->
-  <script>
-    const user = JSON.parse(localStorage.getItem("moziKaUser"));
-    if (user) {
-      document.getElementById("uploader_email").value = user.email;
     }
-    const form = document.getElementById("uploadForm");
-    const msg  = document.getElementById("uploadMessage");
-    form.addEventListener("submit", async e => {
+
+    // 4) Soumission du formulaire (avec redirect)
+    uploadForm.addEventListener('submit', async e => {
       e.preventDefault();
-      msg.textContent = "";
-      const data = new FormData(form);
-      const res  = await fetch("/api/upload", { method: "POST", body: data });
-      const json = await res.json();
-      msg.textContent = json.message;
-      msg.style.color = json.status === "success" ? "green" : "red";
-      if (json.status === "success") {
-        setTimeout(() => window.location.href = "accueil.html", 2000);
+      uploadMessage.textContent = '';
+
+      const formData = new FormData(uploadForm);
+      formData.delete('uploader_email');
+
+      // Sélection du genre (select ou input personnalisé)
+      const selectedGenre = (
+        categorySelect.disabled && customInput.value.trim()
+      ) ? customInput.value.trim() : categorySelect.value;
+
+      // Éviter un tableau, n'envoyer qu'une string
+      formData.delete('category');
+      formData.append('category', selectedGenre);
+
+      try {
+        const res = await fetch(`${baseUrl}/api/upload`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          // reset + redirection vers l'accueil
+          uploadForm.reset();
+          customBox.style.display = 'none';
+          categorySelect.disabled = false;
+          window.location.href = 'accueil.html';
+        } else {
+          uploadMessage.textContent = json.message;
+          uploadMessage.style.color = 'red';
+        }
+      } catch (err) {
+        uploadMessage.textContent = 'Erreur upload : ' + err.message;
+        uploadMessage.style.color = 'red';
       }
     });
-  </script>
 
-  <!-- Script : fetch de l’email serveur -->
-  <script>
-    fetch("/api/user-email")
-      .then(res => res.json())
-      .then(data => {
-        const inp = document.getElementById("uploader_email");
-        if (inp) inp.value = data.email || "";
-      })
-      .catch(err => console.error("Erreur chargement email :", err));
+    // Initialisation au chargement
+    window.addEventListener('DOMContentLoaded', fetchUserInfo);
   </script>
-
 </body>
 </html>

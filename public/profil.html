@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Profil utilisateur - MoziKa</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
@@ -46,16 +46,20 @@
     }
     .music-card {
       position: relative;
+      margin-bottom: 20px;
+    }
+    .music-card hr {
+      margin: 10px 0;
+      border: none;
+      border-top: 1px solid #eee;
     }
     form {
-      margin-top: 30px;
+      margin: 30px auto 40px;
       padding: 20px;
       background: white;
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
     }
     form input {
       width: 100%;
@@ -82,8 +86,9 @@
   <meta name="theme-color" content="#209CEE">
 </head>
 <body>
-  <section id="feedbackZone" style="text-align: center; margin-top: 20px;">
-    <div id="deleteMessage" style="display: none;"></div>
+
+  <section id="feedbackZone" style="text-align:center; margin-top:20px;">
+    <div id="deleteMessage" style="display:none;"></div>
   </section>
 
   <header>
@@ -91,34 +96,33 @@
     <nav>
       <a href="./accueil.html">Accueil</a>
       <a href="upload.html">Ajouter une musique</a>
-      <a href="/logout">Déconnexion</a>
+      <a href="/logout" id="logoutLink">Déconnexion</a>
     </nav>
   </header>
 
   <main>
     <h2>Mon Profil</h2>
-
     <p><strong>👋 Bienvenue :</strong> <span id="username">...</span></p>
     <p><strong>📧 E-mail :</strong> <span id="email">...</span></p>
 
-    <form onsubmit="changePassword(event)">
-      <h3 style="text-align: center; color: #4a90e2;">🔒 Modifier mon mot de passe</h3>
+    <form id="passwordForm" onsubmit="return false;">
+      <h3 style="text-align:center; color:#4a90e2;">🔒 Modifier mon mot de passe</h3>
       <input type="password" id="oldPass" placeholder="Ancien mot de passe" required />
       <input type="password" id="newPass" placeholder="Nouveau mot de passe" required />
       <button type="submit">Changer</button>
       <p id="msg"></p>
     </form>
 
-    <hr />
     <section>
       <h3>🎶 Tes musiques uploadées</h3>
       <ul id="userMusics"></ul>
+    </section>
 
-      <hr />
-      <section>
-        <h3>💙 Tes musiques favorites</h3>
-        <ul id="userFavorites"></ul>
-      </section>
+    <hr />
+
+    <section>
+      <h3>💙 Tes musiques favorites</h3>
+      <ul id="userFavorites"></ul>
     </section>
 
     <div class="confirm-box" id="confirmBox">
@@ -129,175 +133,102 @@
   </main>
 
   <script>
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("Script profil chargé");
+  window.addEventListener("DOMContentLoaded", () => {
+    let user = null;
+    const deleteMsg  = document.getElementById("deleteMessage");
+    const confirmBox = document.getElementById("confirmBox");
+    let targetId     = "";
+    let targetCard   = null;
+    let isRemovingFavorite = false;
 
-  let allMusics = [];
-  let user = null;
-  const deleteMsg  = document.getElementById("deleteMessage");
-  const confirmBox = document.getElementById("confirmBox");
-  let targetPath   = "";
-  let targetCard   = null;
-  let isRemovingFavorite = false;
-
-  // Mise à jour visuelle des compteurs sur toutes les cartes
-  function syncListenCount(path, newCount) {
-    document.querySelectorAll(".music-card").forEach(card => {
-      const audio = card.querySelector("audio");
-      if (audio && audio.src.includes(path)) {
-        const span = card.querySelector(".listenCount");
-        if (span) span.textContent = `🎧 Écoutes : ${newCount}`;
-      }
-    });
-  }
-
-  // Gestion de la déconnexion
-  const logoutLink = document.getElementById("logoutLink");
-  if (logoutLink) {
-    logoutLink.addEventListener("click", e => {
+    // Déconnexion
+    document.getElementById("logoutLink").addEventListener("click", e => {
       e.preventDefault();
-      fetch("/logout")
-        .then(() => {
-          localStorage.removeItem("moziKaUser");
-          window.location.href = "login.html";
-        })
-        .catch(err => {
-          console.error("Erreur logout :", err);
-          window.location.href = "login.html";
-        });
+      fetch("/logout").finally(() => {
+        window.location.href = "login.html";
+      });
     });
-  }
 
-fetch("/api/get-session", {
-  credentials: "include"  // << important pour envoyer les cookies de session !
-})
-.then(res => res.json())
-.then(data => {
-  if (data.status !== "success") {
-    return void (window.location.href = "login.html");
-  }
-  user = data.user;
-  localStorage.setItem("moziKaUser", JSON.stringify(user));
-  document.getElementById("username").textContent = user.username;
-  document.getElementById("email").textContent    = user.email;
-  loadUserMusics();
-  loadUserFavorites();
-})
-.catch(err => {
-  console.error("Erreur session :", err);
-  window.location.href = "login.html";
-});
+    // Récupération de la session
+    fetch("/api/get-session", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status !== "success" || !data.user) {
+        window.location.href = "login.html";
+        return;
+}
 
-fetch("/api/get-session", {
-  credentials: "include"  // important pour envoyer les cookies de session
-})
-  .then(res => res.json())
-  .then(data => {
-    if (data.status !== "success") {
-      window.location.href = "login.html";
-      return;
-    }
-    user = data.user;
-    localStorage.setItem("moziKaUser", JSON.stringify(user));
-    document.getElementById("username").textContent = user.username;
-    document.getElementById("email").textContent    = user.email;
-    loadUserMusics();
-    loadUserFavorites();
-  })
-  .catch(err => {
-    console.error("Erreur session :", err);
-    window.location.href = "login.html";
-  });
+        user = data.user;
+        document.getElementById("username").textContent = user.username;
+        document.getElementById("email").textContent    = user.email;
+        loadUserMusics();
+        loadUserFavorites();
+      })
+      .catch(() => window.location.href = "login.html");
 
-  // On garde en mémoire tous les musics (pour syncListenCount)
-  fetch("/api/musics")
-    .then(res => res.json())
-    .then(data => {
-      allMusics = data.musics || [];
-    })
-    .catch(err => console.error("Erreur /api/musics :", err));
+    // Chargement des musiques uploadées
+    async function loadUserMusics() {
+      const res  = await fetch("/api/musics");
+      const data = await res.json();
+      const list = document.getElementById("userMusics");
+      list.innerHTML = "";
 
+      const musics = (data.musics || []).filter(m => m.uploader === user.username);
+      if (musics.length === 0) {
+        list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
+        return;
+      }
 
-  // ─────── PARTIE 2 : tes musiques ───────
-  async function loadUserMusics() {
-    const res  = await fetch("/api/musics");
-    const data = await res.json();
-    const list = document.getElementById("userMusics");
-    list.innerHTML = "";
+      musics.forEach((music, idx) => {
+        const li = document.createElement("li");
+        li.className = "music-card";
+        li.innerHTML = `
+          <strong>${music.title}</strong> (${music.category})<br>
+          <img src="${music.cover}" alt="Couverture" width="100" /><br>
+          <audio controls controlsList="nodownload" src="${music.path}"
+                 style="width:100%; margin:10px 0;"></audio><br>
+          <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+          📥 Téléchargements : ${music.downloadCount||0}<br>
+          <a class="download-link" href="${music.path}" download>📥 Télécharger</a>
+          <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
+          <hr>
+        `;
+        list.appendChild(li);
 
-    const musics = data.musics.filter(m => m.uploader_email === user.email);
-    if (musics.length === 0) {
-      list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
-      return;
-    }
-
-    musics.forEach((music, idx) => {
-      const li = document.createElement("li");
-      li.className = "music-card";
-      li.innerHTML = `
-        <strong>${music.title}</strong> (${music.category})<br>
-        <img src="${music.cover}" alt="Couverture" width="100" /><br>
-        <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
-        <span class="listenCount">🎧 Écoutes : ${music.listenCount}</span><br>
-        📥 Téléchargements : ${music.downloadCount}<br>
-        <a class="download-link" href="${music.path}" download>📥 Télécharger</a>
-        <button class="deleteBtn" data-path="${music.path}">🗑 Supprimer</button>
-        <hr>
-      `;
-      list.appendChild(li);
-
-      const player = li.querySelector("audio");
-      const span   = li.querySelector(".listenCount");
-      let listenTimer, counted;
-
-      player.addEventListener("play", () => {
-        document.querySelectorAll("audio").forEach(other => {
-          if (other !== player) other.pause();
-        });
-        clearTimeout(listenTimer);
-        counted = false;
-        listenTimer = setTimeout(() => {
-          if (!counted) {
-            fetch("/api/update-listen", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ path: music.path, email: user.email })
-            })
-            .then(r => r.json())
-            .then(d => {
+        // Incrémentation après 15s d'écoute
+        const player = li.querySelector("audio");
+        let timer, counted;
+        player.addEventListener("play", () => {
+          clearTimeout(timer);
+          counted = false;
+          timer = setTimeout(async () => {
+            if (!counted) {
+              const resp = await fetch("/api/update-listen", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: music._id })
+              });
+              const d = await resp.json();
               if (d.listenCount !== undefined) {
                 counted = true;
-                span.textContent = `🎧 Écoutes : ${d.listenCount}`;
-                syncListenCount(music.path, d.listenCount);
+                li.querySelector(".listenCount").textContent = `🎧 Écoutes : ${d.listenCount}`;
               }
-            })
-            .catch(e => console.error("Erreur écoute :", e));
-          }
-        }, 15000);
+            }
+          }, 15000);
+        });
       });
+    }
 
-      player.addEventListener("pause", () => clearTimeout(listenTimer));
-      player.addEventListener("ended", () => {
-        clearTimeout(listenTimer);
-        // autoplay music suivante
-        const audios = Array.from(list.querySelectorAll("audio"));
-        const next = audios[idx + 1];
-        if (next) next.play();
-      });
-    });
-  }
-
-
-  // ─────── PARTIE 3 : tes favoris ───────
-  async function loadUserFavorites() {
-    try {
-      const res  = await fetch("/api/favorites");
+    // Chargement des favoris
+    async function loadUserFavorites() {
+      const res  = await fetch("/api/favorites", { credentials: "include" });
       const data = await res.json();
       const list = document.getElementById("userFavorites");
       list.innerHTML = "";
 
       if (!data.favorites || data.favorites.length === 0) {
-        list.innerHTML = "<li>Aucune musique en favoris.</li>";
+        list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
         return;
       }
 
@@ -307,128 +238,70 @@ fetch("/api/get-session", {
         li.innerHTML = `
           <strong>${music.title}</strong> (${music.category})<br>
           <img src="${music.cover}" alt="Couverture" width="100" /><br>
-          <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
-          <span class="listenCount">🎧 Écoutes : ${music.listenCount}</span><br>
-          📥 Téléchargements : ${music.downloadCount}<br>
+          <audio controls controlsList="nodownload" src="${music.path}"
+                 style="width:100%; margin:10px 0;"></audio><br>
+          <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+          📥 Téléchargements : ${music.downloadCount||0}<br>
           <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-          <button class="removeFavBtn" data-path="${music.path}">❌ Retirer des favoris</button>
+          <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
           <hr>
         `;
         list.appendChild(li);
-
-        const player = li.querySelector("audio");
-        const span   = li.querySelector(".listenCount");
-        let listenTimer, counted;
-
-        player.addEventListener("play", () => {
-          document.querySelectorAll("audio").forEach(other => {
-            if (other !== player) other.pause();
-          });
-          clearTimeout(listenTimer);
-          counted = false;
-          listenTimer = setTimeout(() => {
-            if (!counted) {
-              fetch("/api/update-listen", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ path: music.path, email: user.email })
-              })
-              .then(r => r.json())
-              .then(d => {
-                if (d.listenCount !== undefined) {
-                  counted = true;
-                  span.textContent = `🎧 Écoutes : ${d.listenCount}`;
-                  syncListenCount(music.path, d.listenCount);
-                }
-              })
-              .catch(e => console.error("Erreur écoute favoris :", e));
-            }
-          }, 15000);
-        });
-
-        player.addEventListener("pause", () => clearTimeout(listenTimer));
-        player.addEventListener("ended", () => {
-          clearTimeout(listenTimer);
-          // autoplay music favorite suivante
-          const favAudios = Array.from(list.querySelectorAll("audio"));
-          const nextFav = favAudios[idx + 1];
-          if (nextFav) nextFav.play();
-        });
       });
-    } catch (err) {
-      document.getElementById("userFavorites").innerHTML = "<li>Erreur de chargement des favoris.</li>";
-      console.error(err);
     }
-  }
 
-
-  // Confirmation suppression / retrait favori
-  document.addEventListener("click", e => {
-    if (e.target.classList.contains("deleteBtn") ||
-        e.target.classList.contains("removeFavBtn")) {
-      targetPath   = e.target.dataset.path;
-      targetCard   = e.target.closest(".music-card");
-      isRemovingFavorite = e.target.classList.contains("removeFavBtn");
-      confirmBox.style.display = "block";
-    }
-    if (e.target.classList.contains("no")) {
-      confirmBox.style.display = "none";
-      targetPath = "";
-      targetCard = null;
-      isRemovingFavorite = false;
-    }
-    if (e.target.classList.contains("yes")) {
-      if (!targetPath || !targetCard) return;
-      const endpoint = isRemovingFavorite ? "/api/remove-favorite" : "/api/delete";
-      fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath })
-      })
-      .then(r => r.json())
-      .then(d => {
+    // Confirmation suppression / retrait
+    document.addEventListener("click", e => {
+      if (e.target.matches(".deleteBtn, .removeFavBtn")) {
+        targetId     = e.target.dataset.id;
+        targetCard   = e.target.closest(".music-card");
+        isRemovingFavorite = e.target.classList.contains("removeFavBtn");
+        confirmBox.style.display = "block";
+      }
+      if (e.target.classList.contains("no")) {
         confirmBox.style.display = "none";
-        if (d.status === "success") {
-          targetCard.remove();
-          deleteMsg.textContent = isRemovingFavorite
-            ? "💙 Favori retiré avec succès"
-            : "✅ Supprimée avec succès";
-          deleteMsg.style.display = "inline-block";
-          setTimeout(() => {
-            deleteMsg.style.display = "none";
-            deleteMsg.textContent = "";
-          }, 3000);
-          if (isRemovingFavorite) {
-            const favList = document.getElementById("userFavorites");
-            if (!favList.querySelector(".music-card")) {
-              favList.innerHTML = "<li>Aucune musique en favoris.</li>";
-            }
+      }
+      if (e.target.classList.contains("yes")) {
+        const endpoint = isRemovingFavorite
+          ? "/api/remove-favorite"
+          : "/api/delete";
+        fetch(endpoint, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: targetId })
+        })
+        .then(r => r.json())
+        .then(d => {
+          confirmBox.style.display = "none";
+          if (d.status === "success") {
+            targetCard.remove();
+            deleteMsg.textContent = isRemovingFavorite
+              ? "💙 Favori retiré avec succès"
+              : "✅ Supprimée avec succès";
+            deleteMsg.style.display = "inline-block";
+            setTimeout(() => deleteMsg.style.display = "none", 3000);
+            if (isRemovingFavorite) loadUserFavorites();
           }
-        } else {
-          deleteMsg.textContent = "❌ Échec de la suppression";
-          deleteMsg.style.color = "red";
-        }
-      })
-      .catch(err => {
-        console.error("Erreur serveur :", err);
-        deleteMsg.textContent = "❌ Erreur serveur";
-        deleteMsg.style.color = "red";
-        confirmBox.style.display = "none";
-      });
-    }
-  });
+        })
+        .catch(err => {
+          console.error(err);
+          deleteMsg.textContent = "❌ Erreur serveur";
+          deleteMsg.style.display = "inline-block";
+          confirmBox.style.display = "none";
+        });
+      }
+    });
 
-
-  // Formulaire changement de mot de passe
-  const pwdForm = document.getElementById("passwordForm");
-  if (pwdForm) {
-    pwdForm.addEventListener("submit", async e => {
+    // Changement de mot de passe
+    document.getElementById("passwordForm").addEventListener("submit", async e => {
       e.preventDefault();
       const oldPass = document.getElementById("oldPass").value;
       const newPass = document.getElementById("newPass").value;
       const msg     = document.getElementById("msg");
       const res     = await fetch("/api/change-password", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
       });
@@ -436,11 +309,7 @@ fetch("/api/get-session", {
       msg.textContent = data.message;
       msg.style.color = data.status === "success" ? "green" : "red";
     });
-  }
-
-});  
-</script>
-
-
+  });
+  </script>
 </body>
 </html>

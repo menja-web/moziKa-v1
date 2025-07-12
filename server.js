@@ -1,482 +1,484 @@
 // server.js
+require('dotenv').config();
+const express    = require('express');
+const mongoose   = require('mongoose');
+const path       = require('path');
+const fs         = require('fs');
+const session    = require('express-session');
+const MongoStore = require('connect-mongo');
+const multer     = require('multer');
+const bcrypt     = require('bcrypt');
+const crypto     = require('crypto');
+const cors       = require('cors');
+const nodemailer = require('nodemailer');
 
-// 1) Chargement des variables d’environnement
-require('dotenv').config()
+const User  = require('./models/User');
+const Music = require('./models/Music');
 
-// 2) Import des modules
-const express    = require('express')
-const mongoose   = require('mongoose')
-const path       = require('path')
-const fs         = require('fs')
-const session    = require('express-session')
-const MongoStore = require('connect-mongo')
-const multer     = require('multer')
-const nodemailer = require('nodemailer')
-const bcrypt     = require('bcrypt')
-const crypto     = require('crypto')
-const cors       = require('cors')
+const app    = express();
+const PORT   = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
 
-// 3) Initialisation de l’app
-const app    = express()
-const PORT   = process.env.PORT || 3000
-const isProd = process.env.NODE_ENV === 'production'
-
-// 4) Si derrière un proxy (Render), pour secure cookies
-app.set('trust proxy', 1)
-
-// 5) CORS – n’autorise que l’URL frontale configurée
+// ─── CORS & SESSION ──────────────────────────────────────
+app.set('trust proxy', 1);
 app.use(cors({
-  origin:      process.env.FRONTEND_URL || `http://localhost:${PORT}`,
-  credentials: true
-}))
-
-// 6) Connexion à MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ MongoDB connecté'))
-  .catch(err => console.error('❌ Erreur MongoDB :', err))
-
-// 7) Préparation des dossiers & fichiers JSON
-const uploadDir    = path.join(__dirname, 'uploads')
-const dataDir      = path.join(__dirname, 'data')
-const usersFile    = path.join(__dirname, 'users.json')
-const musicsFile   = path.join(dataDir,   'musics.json')
-const resetFile    = path.join(__dirname, 'resetTokens.json')
-const creatorsFile = path.join(dataDir,   'createurs.json')
-const backupDir    = path.join(__dirname, 'backups')
-
-// création si nécessaire
-;[uploadDir, dataDir, backupDir].forEach(d => {
-  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true })
-})
-;[usersFile, musicsFile, resetFile, creatorsFile].forEach(f => {
-  if (!fs.existsSync(f)) fs.writeFileSync(f, JSON.stringify([]))
-})
-
-// Chargement initial en mémoire
-let musics = JSON.parse(fs.readFileSync(musicsFile))
-
-// utilitaire de sauvegarde (backup) avant chaque déploiement manuel
-function exportDataBackup() {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const out = {
-    users:    JSON.parse(fs.readFileSync(usersFile)),
-    musics:   musics,
-    tokens:   JSON.parse(fs.readFileSync(resetFile)),
-    creators: JSON.parse(fs.readFileSync(creatorsFile))
-  }
-  const dest = path.join(backupDir, `backup-${timestamp}.json`)
-  fs.writeFileSync(dest, JSON.stringify(out, null, 2))
-  console.log(`💾 Backup créé : ${dest}`)
-}
-
-// 8) Middlewares globaux
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-
+  origin:        process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials:   true,
+  methods:       ['GET','POST','OPTIONS'],
+  allowedHeaders:['Content-Type']
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret:            process.env.SESSION_SECRET || 'mozika-secret-dev',
+  secret:            process.env.SESSION_SECRET,
   resave:            false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl:    process.env.MONGODB_URI,
-    ttl:         24 * 60 * 60,
-    autoRemove:  'native'
-  }),
+  store:             MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
     maxAge:   24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure:   isProd,
-    sameSite: isProd ? 'None' : 'Lax'
+    secure:   false,
+    sameSite: 'Lax'
   }
-}))
+}));
 
-// 9) Fichiers statiques
-app.use(express.static(path.join(__dirname, 'public')))
-app.use('/uploads', express.static(uploadDir))
-app.use('/data',    express.static(dataDir))
-
-// 10) Multer – upload musique & cover
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename:    (req, file, cb) => {
-    const ext    = path.extname(file.originalname)
-    const uniq   = Date.now() + '-' + Math.floor(Math.random() * 1e4)
-    const prefix = file.fieldname.startsWith('music') ? 'music-' : 'cover-'
-    cb(null, prefix + uniq + ext)
-  }
-})
-const upload = multer({ storage })
-
-// 11) Middleware de protection
 function requireLogin(req, res, next) {
   if (!req.session.user) {
-    return res.status(403).json({ status: "error", message: "Non connecté." })
+    return res.status(403).json({ status:'error', message:'Non connecté.' });
   }
-  next()
+  next();
 }
 
-// ────────────────────────────────────
-//           ROUTES API
-// ────────────────────────────────────
+// ─── MONGODB CONNECTION ───────────────────────────────────
+mongoose.set('bufferCommands', false);
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ MongoDB connecté'))
+  .catch(err => console.error('❌ Erreur MongoDB :', err));
+
+// ─── STATICS & UPLOAD DIRS ────────────────────────────────
+app.use(express.static(path.join(__dirname,'public')));
+const uploadDir = path.join(__dirname,'public','uploads');
+const facesDir  = path.join(__dirname,'public','faces');
+[uploadDir, facesDir].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
+app.use('/uploads', express.static(uploadDir));
+app.use('/faces',   express.static(facesDir));
+
+// ─── CLOUDINARY STORAGE ───────────────────────────────────
+const cloudinary = require('./config/cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'mozikafiles',
+    resource_type: 'auto',
+    allowed_formats: ['jpg','png','jpeg','mp3','wav']
+  }
+});
+const upload = multer({ storage });
+
+// ─── AUTHENTIFICATION ─────────────────────────────────────
 
 // 1) Envoi du code de vérification
 app.post('/api/send-code', async (req, res) => {
-  const { email, username, password } = req.body
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  const { email, username, password } = req.body;
+  if (!email || !username || !password) {
+    return res.status(400).json({ status:'error', message:'Champs requis manquants.' });
+  }
+  if (await User.findOne({ email: email.toLowerCase() })) {
+    return res.status(409).json({ status:'error', message:'Email déjà utilisé.' });
+  }
+  const code = String(Math.floor(100000 + Math.random()*900000));
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth:    { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    })
-    await transporter.sendMail({
+    await nodemailer.createTransport({
+      service:'gmail',
+      auth:{ user:process.env.EMAIL_USER, pass:process.env.EMAIL_PASS }
+    }).sendMail({
       from:    `MoziKa <${process.env.EMAIL_USER}>`,
       to:      email,
       subject: '🔐 Ton code MoziKa',
       text:    `Bonjour ${username},\n\nTon code : ${code}`
-    })
-    req.session.verificationCode = code
-    req.session.pendingUser       = { email, username, password }
-    res.json({ status: "success", message: "Code envoyé !" })
+    });
+    req.session.verificationCode = code;
+    req.session.pendingUser       = { email, username, password };
+    res.json({ status:'success', message:'Code envoyé !' });
   } catch (err) {
-    console.error('send-code error:', err)
-    res.status(500).json({ status: "error", message: "Échec envoi mail." })
+    console.error('send-code error:', err);
+    res.status(500).json({ status:'error', message:'Échec envoi mail.' });
   }
-})
+});
 
-// 2) Validation & création de compte
-app.post('/api/register', (req, res) => {
-  const { code } = req.body
-  const pending  = req.session.pendingUser
+// 2) Validation de l’inscription
+app.post('/api/register', async (req, res) => {
+  const { code } = req.body;
+  const pending  = req.session.pendingUser;
   if (!pending || code !== req.session.verificationCode) {
-    return res.status(400).json({ status: "error", message: "Code invalide." })
+    return res.status(400).json({ status:'error', message:'Code invalide.' });
   }
-  const users = JSON.parse(fs.readFileSync(usersFile))
-  if (users.find(u => u.email.toLowerCase() === pending.email.toLowerCase())) {
-    return res.status(409).json({ status: "error", message: "Email déjà utilisé." })
+  if (await User.findOne({ email: pending.email.toLowerCase() })) {
+    return res.status(409).json({ status:'error', message:'Email déjà utilisé.' });
   }
-  const hash = bcrypt.hashSync(pending.password, 10)
-  users.push({
+  const hash = await bcrypt.hash(pending.password, 10);
+  const u = await User.create({
     username: pending.username,
-    email:    pending.email,
+    email:    pending.email.toLowerCase(),
     password: hash,
-    joinedAt: new Date().toISOString(),
-    favorites: []
-  })
-  // sauvegarde & backup
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
-  exportDataBackup()
+    joinedAt: new Date()
+  });
+  req.session.user = { id:u._id.toString(), username:u.username, email:u.email };
+  delete req.session.pendingUser;
+  delete req.session.verificationCode;
+  res.json({ status:'success', message:'Inscription réussie !' });
+});
 
-  req.session.user = { username: pending.username, email: pending.email }
-  delete req.session.pendingUser
-  delete req.session.verificationCode
-  res.json({ status: "success", message: "Inscription réussie !" })
-})
-
-// 3) Connexion
-app.post('/api/login', (req, res) => {
-  const { email, password } = req.body
-  const users               = JSON.parse(fs.readFileSync(usersFile))
-  const u                   = users.find(u => u.email.toLowerCase() === email.toLowerCase())
-  if (!u || !bcrypt.compareSync(password, u.password)) {
-    return res.status(401).json({ status: "error", message: "Identifiants invalides." })
+// 3) Login
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  const u = await User.findOne({ email: email.toLowerCase() });
+  if (!u || !(await bcrypt.compare(password, u.password))) {
+    return res.status(401).json({ status:'error', message:'Identifiants invalides.' });
   }
-  req.session.user = { username: u.username, email: u.email }
-  res.json({ status: "success", username: u.username, email: u.email })
-})
+  req.session.user = { id:u._id.toString(), username:u.username, email:u.email };
+  res.json({ status:'success', username:u.username, email:u.email });
+});
 
-// 4) Déconnexion
-app.get('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) return res.redirect('/')
-    res.clearCookie('connect.sid')
-    res.redirect('/')
-  })
-})
+// 4) Logout
+app.post('/api/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie('connect.sid');
+    res.json({ status:'success', message:'Déconnecté.' });
+  });
+});
 
-// 5) Session & user info
+// 5) Session & infos
 app.get('/api/get-session', (req, res) => {
   if (!req.session.user) {
-    return res.status(401).json({ status: "error", message: "Non connecté." })
+    return res.status(401).json({ status:'error', message:'Non connecté.' });
   }
-  res.json({ status: "success", user: req.session.user })
-})
+  res.json({ status:'success', user: req.session.user });
+});
+app.get('/api/user-info', requireLogin, (req, res) => {
+  res.json({
+    status:   'success',
+    username: req.session.user.username,
+    email:    req.session.user.email
+  });
+});
 
-// 6) Toutes les musiques
-app.get('/api/musics', (req, res) => {
-  res.json({ musics })
-})
+// ─── MUSIQUES ──────────────────────────────────────────────
 
-// [AJOUT] 7) Vérifier la session en cours (mobile subscription flow)
-app.get('/api/session-check', (req, res) => {
-  if (req.session.pendingUser && req.session.verificationCode) {
-    return res.json({ status: "active" })
+// GET toutes les musiques
+app.get('/api/musics', async (_req, res) => {
+  const docs = await Music.find()
+    .populate('uploader','username email')
+    .lean();
+  const musics = docs.map(m => ({
+    _id:          m._id,
+    title:        m.title,
+    category:     m.category,
+    uploader:     m.uploader?.username || 'Anonyme',
+    listenCount:  m.listenCount  ?? 0,
+    downloadCount:m.downloadCount?? 0,
+    uploadedAt:   m.uploadedAt,
+    path:         m.externalUrl      || m.path,
+    cover:        m.externalCoverUrl || m.cover
+  }));
+  res.json({ status:'success', musics });
+});
+
+// GET musiques par user
+app.get('/api/musics-by-user', requireLogin, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.session.user.id);
+    const docs = await Music.find({ uploader: userId })
+      .populate('uploader','username')
+      .lean();
+    const musics = docs.map(m => ({
+      _id:      m._id,
+      title:    m.title,
+      uploader: m.uploader?.username || 'Anonyme',
+      path:     m.externalUrl || m.path,
+      cover:    m.externalCoverUrl || m.cover
+    }));
+    res.json({ status:'success', musics });
+  } catch (err) {
+    console.error('Error /api/musics-by-user:', err);
+    res.status(500).json({ status:'error', message:'Erreur serveur.' });
   }
-  return res.json({ status: "expired" })
-})
+});
 
-// 8) Upload musique + cover
+// UPLOAD MUSIQUE + COVER (Cloudinary)
 app.post(
   '/api/upload',
-  requireLogin,
   upload.fields([
     { name: 'musicFile', maxCount: 1 },
     { name: 'coverFile', maxCount: 1 }
   ]),
-  (req, res) => {
-    const { title, category } = req.body
-    const mf = req.files['musicFile']?.[0]
-    const cf = req.files['coverFile']?.[0]
-    if (!title || !category || !mf || !cf) {
-      return res.status(400).json({ status: "error", message: "Champs manquants." })
+  async (req, res) => {
+    console.log('📦 Upload body:',  req.body);
+    console.log('📂 Upload files:', req.files);
+
+    try {
+      const musicFile = req.files?.musicFile?.[0];
+      const coverFile = req.files?.coverFile?.[0];
+      if (!musicFile || !coverFile) {
+        return res.status(400).json({
+          status: 'error',
+          message:'Fichier audio et image requis.'
+        });
+      }
+
+      const { title, category } = req.body;
+      if (!title || !category) {
+        return res.status(400).json({
+          status: 'error',
+          message:'Titre et catégorie obligatoires.'
+        });
+      }
+
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(403).json({
+          status: 'error',
+          message:'Utilisateur non connecté.'
+        });
+      }
+
+      const music = await Music.create({
+        title,
+        category,
+        uploader:      userId,
+        path:           musicFile.path,
+        cover:          coverFile.path,
+        listenCount:    0,
+        downloadCount:  0,
+        uploadedAt:     new Date()
+      });
+
+      res.json({ status:'success', music });
+    } catch (err) {
+      console.error('❌ Upload error:', err);
+      res.status(500).json({
+        status:'error',
+        message:`Échec upload : ${err.message}`
+      });
     }
-    const newMusic = {
-      title,
-      category,
-      uploader_email: req.session.user.email,
-      uploader_name:  req.session.user.username,
-      path:           "/uploads/" + mf.filename,
-      cover:          "/uploads/" + cf.filename,
-      listenCount:    0,
-      downloadCount:  0,
-      listeners:      [],
-      downloaders:    [],
-      uploadedAt:     new Date().toISOString()
-    }
-    musics.push(newMusic)
-    fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
-    exportDataBackup()
-    res.json({ status: "success", music: newMusic })
   }
-)
+);
 
-// 9) Écoute unique
-app.post('/api/listen', requireLogin, (req, res) => {
-  const { path } = req.body
-  const m        = musics.find(m => m.path === path)
-  if (!m) return res.status(404).json({ status: "error" })
-  m.listeners = m.listeners || []
-  if (!m.listeners.includes(req.session.user.email)) {
-    m.listenCount++
-    m.listeners.push(req.session.user.email)
-    fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
-    exportDataBackup()
+// DELETE musique
+app.post('/api/delete', requireLogin, async (req, res) => {
+  const { id } = req.body;
+  const m = await Music.findById(id);
+  if (!m || m.uploader.toString() !== req.session.user.id) {
+    return res.status(404).json({
+      status:'error', message:'Non autorisé ou introuvable.'
+    });
   }
-  res.json({ status: "success", count: m.listenCount })
-})
+  if (m.path.startsWith('/uploads'))
+    fs.unlinkSync(path.join(__dirname,'public', m.path));
+  if (m.cover.startsWith('/uploads'))
+    fs.unlinkSync(path.join(__dirname,'public', m.cover));
+  await Music.findByIdAndDelete(id);
+  res.json({ status:'success', message:'Musique supprimée.' });
+});
 
-// 10) Download unique
-app.post('/api/download', requireLogin, (req, res) => {
-  const { path } = req.body
-  const m        = musics.find(m => m.path === path)
-  if (!m) return res.status(404).json({ status: "error" })
-  m.downloaders = m.downloaders || []
-  if (!m.downloaders.includes(req.session.user.email)) {
-    m.downloadCount++
-    m.downloaders.push(req.session.user.email)
-    fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
-    exportDataBackup()
+// ADD musique par URL externe
+app.post('/api/add-music-url', requireLogin, async (req, res) => {
+  const { title, category, url, coverUrl } = req.body;
+  if (!title||!category||!url||!coverUrl) {
+    return res.status(400).json({ status:'error', message:'Champs manquants.' });
   }
-  res.json({ status: "success", count: m.downloadCount })
-})
+  const music = await Music.create({
+    title,   category,
+    uploader:         req.session.user.id,
+    externalUrl:      url,
+    externalCoverUrl: coverUrl,
+    listenCount:      0,
+    downloadCount:    0,
+    uploadedAt:       new Date()
+  });
+  res.json({ status:'success', music });
+});
 
-// 11) Suppression de musique
-app.post('/api/delete', requireLogin, (req, res) => {
-  const musicPath = req.body.path
-  const idx = musics.findIndex(item =>
-    item.path === musicPath &&
-    item.uploader_email === req.session.user.email
-  )
-  if (idx === -1) {
-    return res.status(404).json({ status: "error", message: "Musique non trouvée ou non autorisée." })
-  }
-  const target = musics[idx]
-  for (const rel of [target.path, target.cover]) {
-    const fullPath = path.join(uploadDir, rel.replace(/^\/+/, ''))
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath)
-  }
-  musics.splice(idx, 1)
-  fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
-  exportDataBackup()
-  res.json({ status: "success", message: "Musique supprimée." })
-})
-
-// 12) Favoris
-app.post('/api/add-favorite', requireLogin, (req, res) => {
-  const { path } = req.body
-  const users    = JSON.parse(fs.readFileSync(usersFile))
-  const u        = users.find(u => u.email === req.session.user.email)
-  u.favorites    = u.favorites || []
-  if (!u.favorites.includes(path)) u.favorites.push(path)
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
-  exportDataBackup()
-  res.json({ status: "success" })
-})
-app.post('/api/remove-favorite', requireLogin, (req, res) => {
-  const { path } = req.body
-  const users    = JSON.parse(fs.readFileSync(usersFile))
-  const u        = users.find(u => u.email === req.session.user.email)
-  u.favorites    = (u.favorites||[]).filter(p => p !== path)
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
-  exportDataBackup()
-  res.json({ status: "success" })
-})
-app.get('/api/favorites', requireLogin, (req, res) => {
-  const users = JSON.parse(fs.readFileSync(usersFile))
-  const u     = users.find(u => u.email === req.session.user.email)
-  res.json({ status: "success", favorites: musics.filter(m => u.favorites?.includes(m.path)) })
-})
-
-// 13) Top 5 musiques
-app.get('/api/top', (req, res) => {
-  const top = [...musics].sort((a,b) => b.listenCount - a.listenCount).slice(0,5)
-  res.json({ top })
-})
-
-// 14) Musiques par utilisateur
-app.get('/api/musics-by-user', requireLogin, (req, res) => {
-  res.json({ status: "success", musics: musics.filter(m => m.uploader_email === req.session.user.email) })
-})
-
-// 15) Reset password – request
-app.post('/api/reset-request', async (req, res) => {
-  const { email } = req.body
-  const users     = JSON.parse(fs.readFileSync(usersFile))
-  const u         = users.find(u => u.email.toLowerCase() === email.toLowerCase())
-  if (!u) return res.json({ status: "error", message: "Adresse inconnue." })
-  const token     = crypto.randomBytes(24).toString('hex')
-  const expiresAt = Date.now() + 15 * 60 * 1000
-  const tokens    = JSON.parse(fs.readFileSync(resetFile))
-  tokens.push({ email: u.email, token, expiresAt })
-  fs.writeFileSync(resetFile, JSON.stringify(tokens, null, 2))
-  const baseUrl = isProd ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : `http://localhost:${PORT}`
-  const link    = `${baseUrl}/new-password.html?token=${token}`
-  try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth:    { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+// ─── FAVORIS ───────────────────────────────────────────────
+app.post('/api/add-favorite',   requireLogin, async (req, res) => {
+  await User.findByIdAndUpdate(req.session.user.id, {
+    $addToSet: { favorites: req.body.id }
+  });
+  res.json({ status:'success' });
+});
+app.post('/api/remove-favorite',requireLogin, async (req, res) => {
+  await User.findByIdAndUpdate(req.session.user.id, {
+    $pull: { favorites: req.body.id }
+  });
+  res.json({ status:'success' });
+});
+app.get('/api/favorites', requireLogin, async (req, res) => {
+  const u = await User.findById(req.session.user.id)
+    .populate({
+      path:'favorites',
+      populate:{ path:'uploader', select:'username' }
     })
-    await transporter.sendMail({
+    .lean();
+  const favs = u.favorites.map(m => ({
+    _id:           m._id,
+    title:         m.title,
+    path:          m.externalUrl || m.path,
+    cover:         m.externalCoverUrl || m.cover,
+    uploader:      m.uploader?.username || 'Anonyme',
+    listenCount:   m.listenCount  ?? 0,
+    downloadCount: m.downloadCount?? 0
+  }));
+  res.json({ status:'success', favorites: favs });
+});
+
+// ─── STATS UNIQUES ─────────────────────────────────────────
+app.post('/api/listen', requireLogin, async (req, res) => {
+  const { id } = req.body;
+  const m = await Music.findOneAndUpdate(
+    { _id: id, listenerList: { $ne: req.session.user.email } },
+    { $addToSet:{ listenerList: req.session.user.email }, $inc:{ listenCount: 1 } },
+    { new: true }
+  );
+  if (m) return res.json({ status:'success', count: m.listenCount });
+  const existing = await Music.findById(id);
+  return existing
+    ? res.json({ status:'success', count: existing.listenCount })
+    : res.status(404).json({ status:'error', message:'Musique introuvable.' });
+});
+
+app.post('/api/download', requireLogin, async (req, res) => {
+  const { id } = req.body;
+  const m = await Music.findOneAndUpdate(
+    { _id: id, downloaderList: { $ne: req.session.user.email } },
+    { $addToSet:{ downloaderList: req.session.user.email }, $inc:{ downloadCount: 1 } },
+    { new: true }
+  );
+  if (m) return res.json({ status:'success', count: m.downloadCount });
+  const existing = await Music.findById(id);
+  return existing
+    ? res.json({ status:'success', count: existing.downloadCount })
+    : res.status(404).json({ status:'error', message:'Musique introuvable.' });
+});
+
+// ─── TOP 5 ──────────────────────────────────────────────────
+app.get('/api/top', async (_req, res) => {
+  const docs = await Music.find().sort({ listenCount:-1 }).limit(5)
+    .populate('uploader','username').lean();
+  const top = docs.map(m => ({
+    _id:        m._id,
+    title:      m.title,
+    path:       m.externalUrl||m.path,
+    cover:      m.externalCoverUrl||m.cover,
+    listenCount:m.listenCount,
+    uploader:   m.uploader?.username || 'Anonyme'
+  }));
+  res.json({ status:'success', top });
+});
+
+// ─── PASSWORD RESET ────────────────────────────────────────
+const resetFile = path.join(__dirname,'resetTokens.json');
+if (!fs.existsSync(resetFile)) fs.writeFileSync(resetFile,'[]');
+
+app.post('/api/reset-request', async (req, res) => {
+  const { email } = req.body;
+  const u = await User.findOne({ email: email.toLowerCase() });
+  if (!u) return res.json({ status:'error', message:'Adresse inconnue.' });
+
+  const token     = crypto.randomBytes(24).toString('hex');
+  const expiresAt = Date.now() + 15*60*1000;
+  const tokens    = JSON.parse(fs.readFileSync(resetFile));
+  tokens.push({ email: u.email, token, expiresAt });
+  fs.writeFileSync(resetFile, JSON.stringify(tokens,null,2));
+
+  const base = isProd
+    ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`
+    : `http://localhost:${PORT}`;
+  const link = `${base}/new-password.html?token=${token}`;
+
+  try {
+    await nodemailer.createTransport({
+      service:'gmail',
+      auth:{ user:process.env.EMAIL_USER, pass:process.env.EMAIL_PASS }
+    }).sendMail({
       from:    `MoziKa <${process.env.EMAIL_USER}>`,
       to:      u.email,
       subject: '🔐 Réinitialisation MoziKa',
-      text:    `Bonjour ${u.username},\n\nVoici ton lien : ${link}\nValable 15 min.`
-    })
-    res.json({ status: "success", message: "Lien envoyé !" })
-  } catch (err) {
-    console.error('reset-request error:', err)
-    res.status(500).json({ status: "error", message: "Échec envoi mail." })
+      text:    `Bonjour ${u.username},\n\nClique ici : ${link}`
+    });
+    res.json({ status:'success', message:'Lien envoyé !' });
+  } catch(err) {
+    console.error('reset-request error:', err);
+    res.status(500).json({ status:'error', message:'Échec mail.' });
   }
-})
+});
 
-// 16) Reset password – change
 app.post('/api/reset-password', (req, res) => {
-  const { token, newPassword } = req.body
-  const tokens                 = JSON.parse(fs.readFileSync(resetFile))
-  const entry                  = tokens.find(t => t.token === token)
+  const { token, newPassword } = req.body;
+  const tokens = JSON.parse(fs.readFileSync(resetFile));
+  const entry  = tokens.find(t => t.token === token);
   if (!entry || Date.now() > entry.expiresAt) {
-    return res.status(400).json({ status: "error", message: "Lien invalide ou expiré." })
+    return res.status(400).json({ status:'error', message:'Lien invalide ou expiré.' });
   }
-  const users = JSON.parse(fs.readFileSync(usersFile))
-  const u     = users.find(u => u.email === entry.email)
-  if (!u) return res.status(400).json({ status: "error", message: "Utilisateur introuvable." })
-  u.password = bcrypt.hashSync(newPassword, 10)
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
-  fs.writeFileSync(resetFile, JSON.stringify(tokens.filter(t => t.token !== token), null, 2))
-  exportDataBackup()
-  res.json({ status: "success", message: "Mot de passe modifié !" })
-})
+  User.findOne({ email: entry.email })
+    .then(u => {
+      u.password = bcrypt.hashSync(newPassword, 10);
+      return u.save();
+    })
+    .then(() => {
+      const remaining = tokens.filter(t => t.token !== token);
+      fs.writeFileSync(resetFile, JSON.stringify(remaining,null,2));
+      res.json({ status:'success', message:'Mot de passe modifié !' });
+    })
+    .catch(err => {
+      console.error('reset-password error:', err);
+      res.status(500).json({ status:'error', message:'Erreur serveur.' });
+    });
+});
 
-// 17) Change password (connecté)
-app.post('/api/change-password', requireLogin, (req, res) => {
-  const { oldPassword, newPassword } = req.body
-  const users = JSON.parse(fs.readFileSync(usersFile))
-  const u     = users.find(u => u.email === req.session.user.email)
-  if (!u) return res.status(404).json({ status: "error", message: "Utilisateur introuvable." })
-  if (!bcrypt.compareSync(oldPassword, u.password)) {
-    return res.status(403).json({ status: "error", message: "Ancien mot de passe incorrect." })
-  }
-  u.password = bcrypt.hashSync(newPassword, 10)
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2))
-  exportDataBackup()
-  res.json({ status: "success", message: "Mot de passe mis à jour !" })
-})
+// ─── PROFILE PHOTOS & CREATORS ─────────────────────────────
+const creatorsFile = path.join(__dirname,'data','createurs.json');
+if (!fs.existsSync(path.dirname(creatorsFile))) {
+  fs.mkdirSync(path.dirname(creatorsFile), { recursive:true });
+}
+if (!fs.existsSync(creatorsFile)) {
+  fs.writeFileSync(creatorsFile,'[]');
+}
+const photoUpload = multer({ dest: facesDir });
 
-// 18) Update photo profil
-const photoUpload = multer({ dest: path.join(__dirname, 'public/faces/') })
 app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
-  const { username } = req.body
-  if (!username || !req.file) return res.json({ success: false })
-  const ext      = path.extname(req.file.originalname)
-  const newName  = req.file.filename + ext
-  const destPath = path.join(__dirname, 'public', 'faces', newName)
-  fs.mkdirSync(path.dirname(destPath), { recursive: true })
-  fs.renameSync(req.file.path, destPath)
-  const creators = JSON.parse(fs.readFileSync(creatorsFile))
-  const idx      = creators.findIndex(c => c.username === username)
-  if (idx !== -1) {
-    creators[idx].photo = `/faces/${newName}`
-  } else {
-    creators.push({ username, photo: `/faces/${newName}` })
+  const { username } = req.body;
+  if (!username || !req.file) {
+    return res.status(400).json({ success:false, message:'Champs manquants.' });
   }
-  fs.writeFileSync(creatorsFile, JSON.stringify(creators, null, 2))
-  exportDataBackup()
-  res.json({ success: true, photo: `/faces/${newName}` })
-})
+  const ext     = path.extname(req.file.originalname);
+  const newName = req.file.filename + ext;
+  const dest    = path.join(facesDir, newName);
+  fs.renameSync(req.file.path, dest);
 
-// 19) Liste des créateurs (photo)
-app.get('/api/creators', (req, res) => {
-  const creators = JSON.parse(fs.readFileSync(creatorsFile))
-  res.json(creators)
-})
+  const creators = JSON.parse(fs.readFileSync(creatorsFile));
+  const idx      = creators.findIndex(c => c.username === username);
+  if (idx !== -1) creators[idx].photo = `/faces/${newName}`;
+  else creators.push({ username, photo:`/faces/${newName}`, streams:0, royalties:0 });
+  fs.writeFileSync(creatorsFile, JSON.stringify(creators,null,2));
+  res.json({ success:true, photo:`/faces/${newName}` });
+});
+app.get('/api/creators', (_req, res) => {
+  const data = JSON.parse(fs.readFileSync(creatorsFile));
+  res.json({ status:'success', creators: data });
+});
 
-// 20) Ajouter musique par URL (pas de fichier)
-app.post('/api/add-music-url', requireLogin, (req, res) => {
-  const { title, category, url, coverUrl } = req.body
-  if (!title || !category || !url || !coverUrl) {
-    return res.status(400).json({ status: "error", message: "Champs manquants." })
-  }
-  const newMusic = {
-    title,
-    category,
-    uploader_email: req.session.user.email,
-    uploader_name:  req.session.user.username,
-    path:           url,
-    cover:          coverUrl,
-    listenCount:    0,
-    downloadCount:  0,
-    listeners:      [],
-    downloaders:    [],
-    uploadedAt:     new Date().toISOString()
-  }
-  musics.push(newMusic)
-  fs.writeFileSync(musicsFile, JSON.stringify(musics, null, 2))
-  exportDataBackup()
-  res.json({ status: "success", music: newMusic })
-})
+// ─── EXPORT, PING & DÉMARRAGE ─────────────────────────────
+app.get('/api/export-data', async (_req, res) => {
+  const users    = await User.find().select('-password').lean();
+  const musics   = await Music.find().populate('uploader','username email').lean();
+  const tokens   = JSON.parse(fs.readFileSync(resetFile));
+  const creators = JSON.parse(fs.readFileSync(creatorsFile));
+  res.json({ status:'success', users, musics, tokens, creators });
+});
+app.get('/api/ping', (_req, res) => res.json({ pong:true }));
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
-
-// 21) Export complet des données (sauvegarde manuelle)
-app.get('/api/export-data', (req, res) => {
-  const users    = JSON.parse(fs.readFileSync(usersFile))
-  const tokens   = JSON.parse(fs.readFileSync(resetFile))
-  const creators = JSON.parse(fs.readFileSync(creatorsFile))
-  res.json({ users, musics, tokens, creators })
-})
-
-// 22) Page d’accueil
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'))
-})
-// Export complet des données
-app.get('/api/export-data', (req, res) => {
-  const users    = JSON.parse(fs.readFileSync(usersFile))
-  const tokens   = JSON.parse(fs.readFileSync(resetFile))
-  const creators = JSON.parse(fs.readFileSync(creatorsFile))
-  // musics est déjà en mémoire
-  res.json({ users, musics, tokens, creators })
-})
-// 23) Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`)
-})
+app.listen(PORT, () => console.log(`🚀 Serveur MoziKa sur http://localhost:${PORT}`));

@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Accueil - MoziKa</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -209,24 +210,20 @@
       color: #888;
     }
     @media screen and (max-width: 768px) {
-  .conteneur {
-    flex-direction: column;
-    padding: 10px;
-  }
-  .titre {
-    font-size: 20px;
-    text-align: center;
-  }
-  .bouton {
-    width: 100%;
-    margin: 10px 0;
-  }
-}
-
+      .conteneur {
+        flex-direction: column;
+        padding: 10px;
+      }
+      .titre {
+        font-size: 20px;
+        text-align: center;
+      }
+      .bouton {
+        width: 100%;
+        margin: 10px 0;
+      }
+    }
   </style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Meta pour la barre d’adresse sur mobile Android -->
-<meta name="theme-color" content="#209CEE">
 </head>
 <body>
   <header>
@@ -256,7 +253,6 @@
     </section>
   </div>
 
-<!-- ✅ Footer Moderne -->
   <footer>
     <div class="footer-grid">
       <div class="footer-item">
@@ -278,170 +274,188 @@
       <p>© 2025 MoziKa — Tous droits réservés</p>
     </div>
   </footer>
-  <!-- ✅ Script corrigé -->
-<script>
-  let allMusics = [];
 
-  // 1. Récupère et affiche la liste des musiques
-  async function fetchMusics() {
-    try {
-      const res  = await fetch('/api/musics');
-      const json = await res.json();
-      allMusics   = json.musics || [];
+  <script>
+    const baseUrl = 'http://localhost:3000';
+    let currentUser = null;
+    let allMusics = [];
+    let favoritesSet = new Set();
+
+    // 1) Récupérer la session utilisateur
+    async function fetchSession() {
+      try {
+        const res = await fetch(`${baseUrl}/api/get-session`, {
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const { user } = await res.json();
+          currentUser = user;
+        }
+      } catch {}
+    }
+
+    // 2) Charger les favoris
+    async function loadFavorites() {
+      if (!currentUser) return;
+      const res = await fetch(`${baseUrl}/api/favorites`, {
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const { favorites } = await res.json();
+        favoritesSet = new Set(favorites.map(m => m._id));
+      }
+    }
+
+    // 3) Récupérer et afficher les musiques
+    async function fetchMusics() {
+      const res = await fetch(`${baseUrl}/api/musics`);
+      const { musics } = await res.json();
+      allMusics = musics || [];
       allMusics.sort((a, b) => (b.listenCount || 0) - (a.listenCount || 0));
       renderMusics(allMusics);
-    } catch (err) {
-      document.getElementById("musicList").innerHTML =
-        `<li>Erreur chargement : ${err.message}</li>`;
     }
-  }
 
-  // 2. Génère le HTML et (ré)attache tous les events
-  function renderMusics(list) {
-    const ul = document.getElementById("musicList");
-    ul.innerHTML = "";
+    // 4) Générer le HTML et attacher les events
+    function renderMusics(list) {
+      const ul = document.getElementById("musicList");
+      ul.innerHTML = "";
 
-    list.forEach(music => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <img class="cover" src="${music.cover}" alt="Couverture" />
-        <strong>${music.title}</strong>
-        <small>Par ${music.uploader_name || 'Anonyme'}</small>
-        <div class="meta">
-          🎵 ${music.category} • 📅 ${music.uploadedAt?.split("T")[0]}
-        </div>
-        <audio controls controlsList="nodownload"
-               src="${music.path}" data-path="${music.path}"></audio>
-        <a class="download-link"
-           href="${music.path}" download 
-           data-path="${music.path}">Télécharger</a>
-        <button class="favBtn" data-path="${music.path}">
-          💙 Ajouter aux favoris
-        </button>
-        <div class="counters">
-          Écoute : <span class="listenCount">${music.listenCount||0}</span> fois —
-          Téléchargement : <span class="downloadCount">${music.downloadCount||0}</span> fois
-        </div>
-      `;
-      ul.appendChild(li);
-    });
+      list.forEach(music => {
+        const isFav = favoritesSet.has(music._id);
+        const li = document.createElement("li");
 
-    attachAudioHandlers();
-    attachDownloadHandlers();
-  }
+        li.innerHTML = `
+          <img class="cover" src="${music.cover}" alt="Couverture" />
+          <strong>${music.title}</strong>
+          <small>Par ${music.uploader || 'Anonyme'}</small>
+          <div class="meta">
+            🎵 ${music.category} • 📅 ${music.uploadedAt?.split("T")[0]}
+          </div>
+          <audio controls controlsList="nodownload" data-id="${music._id}" src="${music.path}"></audio>
+          <a class="download-link" data-id="${music._id}" href="${music.path}" download>Télécharger</a>
+          <button class="favBtn" data-id="${music._id}">
+            ${isFav ? '❤️ Supprimé' : '🤍 Ajouter aux favoris'}
+          </button>
+          <div class="counters">
+            Écoute : <span class="listenCount">${music.listenCount||0}</span> fois —
+            Téléchargement : <span class="downloadCount">${music.downloadCount||0}</span> fois
+          </div>
+        `;
+        ul.appendChild(li);
+      });
 
-  // 3. Après 15s de lecture, appelle /api/listen + autoplay next
-  function attachAudioHandlers() {
-    const audios = document.querySelectorAll("#musicList audio");
-    audios.forEach((audio, idx) => {
-      let timer;
+      attachAudioHandlers();
+      attachDownloadHandlers();
+      attachFavoriteHandlers();
+    }
 
-      audio.addEventListener("play", () => {
-        // stoppe les autres
-        audios.forEach(a => { if (a !== audio) a.pause(); });
-        clearTimeout(timer);
-        // relance le timer de comptage
-        timer = setTimeout(() => {
-          const path = audio.dataset.path;
-          fetch("/api/listen", {
+    // 5) Compteur écoute après 15s
+    function attachAudioHandlers() {
+      const audios = document.querySelectorAll("#musicList audio");
+      audios.forEach((audio, idx) => {
+        let timer;
+        audio.addEventListener("play", () => {
+          audios.forEach(a => { if (a !== audio) a.pause(); });
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            const id = audio.dataset.id;
+            fetch(`${baseUrl}/api/listen`, {
+              method: "POST",
+              credentials: 'include',
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id })
+            })
+            .then(r => r.json())
+            .then(data => {
+              if (data.status === "success") {
+                audio.closest("li").querySelector(".listenCount").textContent = data.count;
+              }
+            })
+            .catch(console.error);
+          }, 15000);
+        });
+        audio.addEventListener("pause", () => clearTimeout(timer));
+        audio.addEventListener("ended", () => {
+          clearTimeout(timer);
+          if (idx + 1 < audios.length) audios[idx + 1].play();
+        });
+      });
+    }
+
+    // 6) Compteur téléchargements
+    function attachDownloadHandlers() {
+      document.querySelectorAll(".download-link").forEach(a => {
+        a.addEventListener("click", () => {
+          const id = a.dataset.id;
+          fetch(`${baseUrl}/api/download`, {
             method: "POST",
+            credentials: 'include',
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ path })
+            body: JSON.stringify({ id })
           })
           .then(r => r.json())
           .then(data => {
             if (data.status === "success") {
-              const span = audio.closest("li")
-                               .querySelector(".listenCount");
-              if (span) span.textContent = data.count;
+              a.closest("li").querySelector(".downloadCount").textContent = data.count;
             }
           })
           .catch(console.error);
-        }, 15000);
+        });
       });
+    }
 
-      audio.addEventListener("pause", () => clearTimeout(timer));
-
-      audio.addEventListener("ended", () => {
-        clearTimeout(timer);
-        // lance le suivant s’il existe
-        if (idx + 1 < audios.length) {
-          audios[idx + 1].play();
-        }
+    // 7) Gestion des favoris
+    function attachFavoriteHandlers() {
+      document.querySelectorAll(".favBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const action = favoritesSet.has(id) ? 'remove-favorite' : 'add-favorite';
+          fetch(`${baseUrl}/api/${action}`, {
+            method: "POST",
+            credentials: 'include',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === "success") {
+              if (action === 'add-favorite') {
+                favoritesSet.add(id);
+                btn.textContent = '❤️ Supprimé';
+              } else {
+                favoritesSet.delete(id);
+                btn.textContent = '🤍 Ajouter aux favoris';
+              }
+            }
+          })
+          .catch(console.error);
+        });
       });
-    });
-  }
+    }
 
-  // 4. Handler pour les téléchargements
-  function attachDownloadHandlers() {
-    const links = document.querySelectorAll(".download-link");
-    links.forEach(a => {
-      a.addEventListener("click", () => {
-        const path = a.dataset.path;
-        fetch("/api/download", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path })
-        })
-        .then(r => r.json())
-        .then(data => {
-          if (data.status === "success") {
-            const span = a.closest("li")
-                         .querySelector(".downloadCount");
-            if (span) span.textContent = data.count;
-          }
-        })
-        .catch(console.error);
-      });
-    });
-  }
-
-  // 5. Barre de recherche filtre en temps réel
-  document.getElementById("searchInput")
-    .addEventListener("input", e => {
+    // 8) Recherche en temps réel
+    document.getElementById("searchInput").addEventListener("input", e => {
       const q = e.target.value.trim().toLowerCase();
-      const filtered = allMusics.filter(m =>
-        m.title.toLowerCase().includes(q)
-      );
-      renderMusics(filtered);
+      renderMusics(allMusics.filter(m => m.title.toLowerCase().includes(q)));
     });
 
-  // 6. Boutons favoris
-  document.addEventListener("click", e => {
-    if (!e.target.classList.contains("favBtn")) return;
-    const path = e.target.dataset.path;
-    fetch("/api/add-favorite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path })
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.status === "success") {
-        e.target.textContent = "💙 Ajouté";
-        e.target.disabled    = true;
-      }
-    })
-    .catch(console.error);
-  });
+    // 9) Top 5 musiques
+    fetch(`${baseUrl}/api/top`)
+      .then(r => r.json())
+      .then(data => {
+        const list = document.getElementById("topList");
+        list.innerHTML = data.top && data.top.length
+          ? data.top.map(m => `<li>${m.title} – ${m.listenCount||0} écoutes</li>`).join("")
+          : "<li>Aucun hit pour le moment.</li>";
+      })
+      .catch(console.error);
 
-  // 7. Top 5 musiques
-  fetch("/api/top")
-    .then(r => r.json())
-    .then(data => {
-      const list = document.getElementById("topList");
-      if (!data.top || !data.top.length) {
-        list.innerHTML = "<li>Aucun hit pour le moment.</li>";
-      } else {
-        list.innerHTML = data.top.map(m =>
-          `<li>${m.title} – ${m.listenCount||0} écoutes</li>`
-        ).join("");
-      }
+    // Démarrage
+    window.addEventListener("DOMContentLoaded", async () => {
+      await fetchSession();
+      await loadFavorites();
+      await fetchMusics();
     });
-
-  // 8. Kick-off
-  fetchMusics();
-</script>
-
+  </script>
 </body>
 </html>
