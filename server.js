@@ -55,8 +55,9 @@ function requireLogin(req, res, next) {
   }
   next();
 }
-app.use("/api", require("./routes/user.route.js"));
-app.use("/api", require("./routes/auth.route.js"));
+app.use("/api", require("./routes/auth.route.js")); // ✅ login + register
+app.use("/api", require("./routes/user.route.js")); // ✅ info + change-password
+
 
 
 // ─── MONGODB CONNECTION ───────────────────────────────────
