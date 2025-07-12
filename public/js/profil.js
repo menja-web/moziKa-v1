@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadUserFavorites() {
     const res = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
     const data = await res.json();
+    console.log("➡️ Favoris récupérés :", data.favorites);
     const list = document.getElementById("userFavorites");
     list.innerHTML = "";
 
