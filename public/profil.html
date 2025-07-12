@@ -134,72 +134,67 @@
 </main>
 
   <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const baseUrl = "https://mozika-gasy.onrender.com";
-    let user = null;
-    const deleteMsg  = document.getElementById("deleteMessage");
-    const confirmBox = document.getElementById("confirmBox");
-    let targetId     = "";
-    let targetCard   = null;
-    let isRemovingFavorite = false;
-
-    // 🔓 Déconnexion
-    document.getElementById("logoutLink").addEventListener("click", e => {
-      e.preventDefault();
-      fetch(`${baseUrl}/api/logout`, { credentials: "include" }).finally(() => {
-        window.location.href = "login.html";
-      });
-    });
-
-    // 👤 Récupération session
-    fetch(`${baseUrl}/api/get-session`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status !== "success" || !data.user) {
-          window.location.href = "login.html";
-          return;
-        }
-        user = data.user;
-        document.getElementById("username").textContent = user.username;
-        document.getElementById("email").textContent    = user.email;
-        loadUserMusics();
-        loadUserFavorites();
-      })
-      .catch(() => window.location.href = "login.html");
-
 document.addEventListener("DOMContentLoaded", () => {
-  const baseUrl = ""; // ← à adapter si nécessaire
+  const baseUrl = "https://mozika-gasy.onrender.com";
+  let user = null;
+  const deleteMsg  = document.getElementById("deleteMessage");
+  const confirmBox = document.getElementById("confirmBox");
+  let targetId     = "";
+  let targetCard   = null;
+  let isRemovingFavorite = false;
 
-  // 🎶 Musiques uploadées
+  // 🔓 Déconnexion
+  document.getElementById("logoutLink").addEventListener("click", e => {
+    e.preventDefault();
+    fetch(`${baseUrl}/api/logout`, { credentials: "include" })
+      .finally(() => window.location.href = "login.html");
+  });
+
+  // 👤 Récupération de la session
+  fetch(`${baseUrl}/api/get-session`, { credentials: "include" })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status !== "success" || !data.user) {
+        window.location.href = "login.html";
+        return;
+      }
+      user = data.user;
+      document.getElementById("username").textContent = user.username;
+      document.getElementById("email").textContent    = user.email;
+      loadUserMusics();
+      loadUserFavorites();
+    })
+    .catch(() => window.location.href = "login.html");
+
+  // 🎶 Chargement des musiques uploadées
   async function loadUserMusics() {
-    const res = await fetch(`${baseUrl}/api/musics`, { credentials: "include" });
+    const res  = await fetch(`${baseUrl}/api/musics`, { credentials: "include" });
     const data = await res.json();
     const list = document.getElementById("userMusics");
     list.innerHTML = "";
 
     const musics = (data.musics || []).filter(m => m.uploader === user.username);
-    if (musics.length === 0) {
-      list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique uploadée 🎶</li>";
+    if (!musics.length) {
+      list.innerHTML = "<li style='text-align:center;color:#999;'>Aucune musique uploadée 🎶</li>";
       return;
     }
 
-    musics.forEach((music) => {
+    musics.forEach(music => {
       const li = document.createElement("li");
       li.className = "music-card";
       li.innerHTML = `
         <strong>${music.title}</strong> (${music.category})<br>
-        <img src="${music.cover}" alt="Couverture" width="100" /><br>
+        <img src="${music.cover}" alt="Couverture" width="100"/><br>
         <audio controls controlsList="nodownload" src="${music.path}"
-               style="width:100%; margin:10px 0;"></audio><br>
-        <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
-        📥 Téléchargements : ${music.downloadCount || 0}<br>
+               style="width:100%;margin:10px 0;"></audio><br>
+        <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+        📥 Téléchargements : ${music.downloadCount||0}<br>
         <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
         <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
-        <hr>
-      `;
+        <hr>`;
       list.appendChild(li);
 
-      // ✅ Écoute > compteur après 15 sec
+      // compteur d’écoutes après 15s
       const player = li.querySelector("audio");
       let timer, counted = false;
       player.addEventListener("play", () => {
@@ -208,8 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
         timer = setTimeout(async () => {
           if (!counted) {
             const resp = await fetch(`${baseUrl}/api/update-listen`, {
-              method: "POST",
-              credentials: "include",
+              method: "POST", credentials: "include",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id: music._id })
             });
@@ -221,190 +215,107 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }, 15000);
       });
-
-      // ✅ Suppression avec confirmation
-      const deleteBtn = li.querySelector(".deleteBtn");
-      deleteBtn.addEventListener("click", () => {
-        const confirmBox = document.getElementById("confirmBox");
-        confirmBox.style.display = "block";
-
-        document.getElementById("confirmNo").onclick = () => {
-          confirmBox.style.display = "none";
-        };
-
-        document.getElementById("confirmYes").onclick = () => {
-          fetch(`${baseUrl}/api/music/delete`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ musicId: deleteBtn.dataset.id })
-          })
-            .then(res => res.json())
-            .then(data => {
-              if (data.status === "success") li.remove();
-              else alert("Erreur : " + data.message);
-              confirmBox.style.display = "none";
-            })
-            .catch(err => {
-              console.error("❌ Erreur suppression :", err);
-              confirmBox.style.display = "none";
-            });
-        };
-      });
     });
   }
 
-  // 💙 Musiques favorites
+  // 💙 Chargement des favoris
   async function loadUserFavorites() {
-    const res = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
+    const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
     const data = await res.json();
     const list = document.getElementById("userFavorites");
     list.innerHTML = "";
 
-    if (!data.favorites || data.favorites.length === 0) {
-      list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
+    if (!data.favorites || !data.favorites.length) {
+      list.innerHTML = "<li style='text-align:center;color:#999;'>Aucune musique en favoris 💙</li>";
       return;
     }
 
-    data.favorites.forEach((music) => {
+    data.favorites.forEach(music => {
       const li = document.createElement("li");
       li.className = "music-card";
       li.innerHTML = `
         <strong>${music.title}</strong> (${music.category})<br>
-        <img src="${music.cover}" alt="Couverture" width="100" /><br>
+        <img src="${music.cover}" alt="Couverture" width="100"/><br>
         <audio controls controlsList="nodownload" src="${music.path}"
-               style="width:100%; margin:10px 0;"></audio><br>
-        <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
-        📥 Téléchargements : ${music.downloadCount || 0}<br>
+               style="width:100%;margin:10px 0;"></audio><br>
+        <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+        📥 Téléchargements : ${music.downloadCount||0}<br>
         <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
         <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
-        <hr>
-      `;
+        <hr>`;
       list.appendChild(li);
-
-      const favBtn = li.querySelector(".removeFavBtn");
-      favBtn.addEventListener("click", () => {
-        fetch(`${baseUrl}/api/favorites/remove`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ musicId: favBtn.dataset.id })
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === "success") li.remove();
-            else alert("Erreur : " + data.message);
-          })
-          .catch(err => console.error("❌ Erreur retrait favori :", err));
-      });
     });
   }
 
-  // 🔄 Charge les deux sections
-  loadUserMusics();
-  loadUserFavorites();
-});
-
-
-    // ✅ Attache l'écouteur AU bouton INSÉRÉ
-    const btn = li.querySelector(".removeFavBtn");
-    btn.addEventListener("click", () => {
-      const musicId = btn.dataset.id;
-      fetch(`${baseUrl}/api/favorites/remove`, {
-        method: "POST",
-        credentials: "include",
+  // 🗑 Confirmation suppression / retrait
+  document.addEventListener("click", e => {
+    if (e.target.matches(".deleteBtn, .removeFavBtn")) {
+      targetId     = e.target.dataset.id;
+      targetCard   = e.target.closest(".music-card");
+      isRemovingFavorite = e.target.classList.contains("removeFavBtn");
+      confirmBox.style.display = "block";
+    }
+    if (e.target.classList.contains("no")) {
+      confirmBox.style.display = "none";
+    }
+    if (e.target.classList.contains("yes")) {
+      const endpoint = isRemovingFavorite
+        ? `${baseUrl}/api/favorites/remove`
+        : `${baseUrl}/api/music/delete`;
+      fetch(endpoint, {
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ musicId })
+        body: JSON.stringify({ musicId: targetId })
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === "success") {
-            li.remove();
-          } else {
-            alert("Erreur : " + data.message);
-          }
-        });
-    });
+      .then(r => r.json())
+      .then(d => {
+        confirmBox.style.display = "none";
+        if (d.status === "success") {
+          targetCard.remove();
+          deleteMsg.textContent = isRemovingFavorite
+            ? "💙 Favori retiré avec succès"
+            : "✅ Supprimée avec succès";
+          deleteMsg.style.display = "inline-block";
+          setTimeout(() => deleteMsg.style.display = "none", 3000);
+          if (isRemovingFavorite) loadUserFavorites();
+        }
+      })
+      .catch(() => {
+        deleteMsg.textContent = "❌ Erreur serveur";
+        deleteMsg.style.display = "inline-block";
+        confirmBox.style.display = "none";
+      });
+    }
   });
 
-
-
-    // 🗑 Confirmation suppression / retrait
-    document.addEventListener("click", e => {
-      if (e.target.matches(".deleteBtn, .removeFavBtn")) {
-        targetId     = e.target.dataset.id;
-        targetCard   = e.target.closest(".music-card");
-        isRemovingFavorite = e.target.classList.contains("removeFavBtn");
-        confirmBox.style.display = "block";
-      }
-      if (e.target.classList.contains("no")) {
-        confirmBox.style.display = "none";
-      }
-      if (e.target.classList.contains("yes")) {
-        const endpoint = isRemovingFavorite
-          ? `${baseUrl}/api/remove-favorite`
-          : `${baseUrl}/api/delete`;
-        fetch(endpoint, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: targetId })
-        })
-        .then(r => r.json())
-        .then(d => {
-          confirmBox.style.display = "none";
-          if (d.status === "success") {
-            targetCard.remove();
-            deleteMsg.textContent = isRemovingFavorite
-              ? "💙 Favori retiré avec succès"
-              : "✅ Supprimée avec succès";
-            deleteMsg.style.display = "inline-block";
-            setTimeout(() => deleteMsg.style.display = "none", 3000);
-            if (isRemovingFavorite) loadUserFavorites();
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          deleteMsg.textContent = "❌ Erreur serveur";
-          deleteMsg.style.display = "inline-block";
-          confirmBox.style.display = "none";
-        });
-      }
-    });
-
-    // 🔐 Changement de mot de passe
-    document.getElementById("passwordForm").addEventListener("submit", async e => {
+  // 🔐 Changement de mot de passe
+  document.getElementById("passwordForm")
+    .addEventListener("submit", async e => {
       e.preventDefault();
-
       const oldPass = document.getElementById("oldPass").value;
       const newPass = document.getElementById("newPass").value;
       const msg     = document.getElementById("msg");
-
       try {
         const res = await fetch(`${baseUrl}/api/change-password`, {
-          method: "POST",
-          credentials: "include",
+          method: "POST", credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            currentPassword: oldPass,
-            newPassword: newPass
-          })
+          body: JSON.stringify({ currentPassword: oldPass, newPassword: newPass })
         });
-
         const data = await res.json();
         msg.textContent = data.message;
         msg.style.color = data.status === "success" ? "green" : "red";
-
         if (data.status === "success") {
           document.getElementById("oldPass").value = "";
           document.getElementById("newPass").value = "";
           setTimeout(() => { msg.textContent = ""; }, 5000);
         }
-      } catch (err) {
+      } catch {
         msg.textContent = "Erreur lors de la requête.";
         msg.style.color = "red";
       }
     });
+
+});
 </script>
 </body>
 </html>
