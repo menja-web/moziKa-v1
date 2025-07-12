@@ -133,7 +133,8 @@
   </main>
 
   <script>
-  window.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", () => {
+    const baseUrl = "https://mozika-gasy.onrender.com";
     let user = null;
     const deleteMsg  = document.getElementById("deleteMessage");
     const confirmBox = document.getElementById("confirmBox");
@@ -141,25 +142,22 @@
     let targetCard   = null;
     let isRemovingFavorite = false;
 
-    // Déconnexion
+    // 🔓 Déconnexion
     document.getElementById("logoutLink").addEventListener("click", e => {
       e.preventDefault();
-      fetch("/logout").finally(() => {
+      fetch(`${baseUrl}/api/logout`, { credentials: "include" }).finally(() => {
         window.location.href = "login.html";
       });
     });
 
-    // Récupération de la session
-    fetch("/api/get-session", {
-  credentials: "include"
-})
+    // 👤 Récupération session
+    fetch(`${baseUrl}/api/get-session`, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         if (data.status !== "success" || !data.user) {
-        window.location.href = "login.html";
-        return;
-}
-
+          window.location.href = "login.html";
+          return;
+        }
         user = data.user;
         document.getElementById("username").textContent = user.username;
         document.getElementById("email").textContent    = user.email;
@@ -168,9 +166,9 @@
       })
       .catch(() => window.location.href = "login.html");
 
-    // Chargement des musiques uploadées
+    // 🎵 Musiques uploadées
     async function loadUserMusics() {
-      const res  = await fetch("/api/musics");
+      const res  = await fetch(`${baseUrl}/api/musics`);
       const data = await res.json();
       const list = document.getElementById("userMusics");
       list.innerHTML = "";
@@ -197,7 +195,6 @@
         `;
         list.appendChild(li);
 
-        // Incrémentation après 15s d'écoute
         const player = li.querySelector("audio");
         let timer, counted;
         player.addEventListener("play", () => {
@@ -205,7 +202,7 @@
           counted = false;
           timer = setTimeout(async () => {
             if (!counted) {
-              const resp = await fetch("/api/update-listen", {
+              const resp = await fetch(`${baseUrl}/api/update-listen`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -222,9 +219,9 @@
       });
     }
 
-    // Chargement des favoris
+    // 💙 Favoris
     async function loadUserFavorites() {
-      const res  = await fetch("/api/favorites", { credentials: "include" });
+      const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
       const data = await res.json();
       const list = document.getElementById("userFavorites");
       list.innerHTML = "";
@@ -252,7 +249,7 @@
       });
     }
 
-    // Confirmation suppression / retrait
+    // 🗑 Confirmation suppression / retrait
     document.addEventListener("click", e => {
       if (e.target.matches(".deleteBtn, .removeFavBtn")) {
         targetId     = e.target.dataset.id;
@@ -265,8 +262,8 @@
       }
       if (e.target.classList.contains("yes")) {
         const endpoint = isRemovingFavorite
-          ? "/api/remove-favorite"
-          : "/api/delete";
+          ? `${baseUrl}/api/remove-favorite`
+          : `${baseUrl}/api/delete`;
         fetch(endpoint, {
           method: "POST",
           credentials: "include",
@@ -295,10 +292,6 @@
       }
     });
 
-    // Changement de mot de passe
-  
-
-  document.addEventListener("DOMContentLoaded", () => {
     // 🔐 Changement de mot de passe
     document.getElementById("passwordForm").addEventListener("submit", async e => {
       e.preventDefault();
@@ -313,31 +306,26 @@
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            currentPassword: oldPass, // ✅ correspond au backend
+            currentPassword: oldPass,
             newPassword: newPass
           })
         });
 
         const data = await res.json();
-
         msg.textContent = data.message;
         msg.style.color = data.status === "success" ? "green" : "red";
 
-        // Effacer les champs et le message après succès
         if (data.status === "success") {
           document.getElementById("oldPass").value = "";
           document.getElementById("newPass").value = "";
-          setTimeout(() => {
-            msg.textContent = "";
-          }, 5000);
+          setTimeout(() => { msg.textContent = ""; }, 5000);
         }
-
       } catch (err) {
         msg.textContent = "Erreur lors de la requête.";
         msg.style.color = "red";
       }
     });
   });
-  </script>
+</script>
 </body>
 </html>
