@@ -111,7 +111,7 @@
     <input type="email" name="uploader_email" id="uploader_email" readonly />
 
     <label for="category">Catégorie musicale</label>
-    <select name="category" id="category" required>
+    <select name="category" id="category" >
       <option value="">-- Choisir un genre --</option>
     </select>
 
@@ -193,20 +193,38 @@
         categorySelect.disabled = false;
       }
     });
-
-    // 3) Récupérer l’email utilisateur
-    async function fetchUserInfo() {
-      try {
-        const res = await fetch(`${baseUrl}/api/user-info`, {
-          credentials: 'include'
-        });
-        if (!res.ok) throw new Error(`Statut ${res.status}`);
-        const { email } = await res.json();
-        uploaderEmailInput.value = email || '';
-      } catch (err) {
-        console.error('Erreur chargement profil :', err);
-      }
+  // 👉 3) Validation avant soumission
+  uploadForm.addEventListener("submit", function (e) {
+    if (categorySelect.value === "Autre" && customInput.value.trim() === "") {
+      e.preventDefault();
+      alert("Tu dois préciser ton genre musical si tu choisis 'Autre'.");
+      customInput.focus();
+    } else if (categorySelect.value === "") {
+      e.preventDefault();
+      alert("Choisis une catégorie musicale.");
+      categorySelect.focus();
     }
+  });
+    // 3) Récupérer l’email utilisateur
+async function fetchUserInfo() {
+  try {
+    const res = await fetch(`${baseUrl}/api/get-session`, {
+      credentials: 'include'
+    });
+    const data = await res.json();
+
+    if (data.status !== 'success' || !data.user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    uploaderEmailInput.value = data.user.email || '';
+  } catch (err) {
+    console.error('Erreur chargement session :', err);
+    window.location.href = 'login.html';
+  }
+}
+
 
     // 4) Soumission du formulaire (avec redirect)
     uploadForm.addEventListener('submit', async e => {
