@@ -94,14 +94,54 @@ router.post("/favorites/add", async (req, res) => {
   const userId = req.session?.user?._id;
   const { musicId } = req.body;
 
-  if (!userId) return res.status(401).json({ status: "error", message: "Non connecté." });
-  if (!musicId) return res.status(400).json({ status: "error", message: "ID musique manquant." });
+  // 🔒 Validation indispensable !
+  if (!userId) {
+    return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
+  }
+
+  if (!musicId) {
+    return res.status(400).json({ status: "error", message: "ID musique manquant." });
+  }
 
   try {
     await User.findByIdAndUpdate(userId, { $addToSet: { favorites: musicId } });
-    res.json({ status: "success", message: "Musique ajoutée aux favoris." });
+    res.json({ status: "success", message: "Ajouté aux favoris." });
   } catch (err) {
     console.error("Erreur ajout favoris :", err);
+    res.status(500).json({ status: "error", message: "Erreur serveur." });
+  }
+});
+
+router.post("/remove-favorite", async (req, res) => {
+  const userId = req.session?.user?._id;
+  const { musicId } = req.body;
+
+  if (!userId || !musicId) {
+    return res.status(400).json({ status: "error", message: "Session ou ID musique manquant." });
+  }
+
+  try {
+    await User.findByIdAndUpdate(userId, { $pull: { favorites: musicId } });
+    res.json({ status: "success", message: "Musique retirée des favoris." });
+  } catch (err) {
+    console.error("Erreur suppression favori :", err);
+    res.status(500).json({ status: "error", message: "Erreur serveur." });
+  }
+});
+router.post("/delete", async (req, res) => {
+  const userId = req.session?.user?._id;
+  const { musicId } = req.body;
+
+  if (!userId || !musicId) {
+    return res.status(400).json({ status: "error", message: "Session ou ID musique manquant." });
+  }
+
+  try {
+    await Music.findByIdAndDelete(musicId); // ou suppression logique selon ton modèle
+    await User.findByIdAndUpdate(userId, { $pull: { uploads: musicId } });
+    res.json({ status: "success", message: "Musique supprimée." });
+  } catch (err) {
+    console.error("Erreur suppression musique :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
