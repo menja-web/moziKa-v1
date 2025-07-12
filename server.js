@@ -36,17 +36,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret:            process.env.SESSION_SECRET,
-  resave:            false,
+  secret: process.env.SESSION_SECRET,
+  resave: false,
   saveUninitialized: false,
-  store:             MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
-    maxAge:   24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure:   false,
-    sameSite: 'Lax'
+    secure: true,        // ✅ Cookie envoyé uniquement via HTTPS
+    sameSite: "none"     // ✅ Autorise frontend ↔ backend cross-origin
   }
 }));
+
 
 function requireLogin(req, res, next) {
   if (!req.session.user) {

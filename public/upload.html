@@ -206,6 +206,7 @@
     }
   });
     // 3) Récupérer l’email utilisateur
+    const baseUrl = "https://mozika-gasy.onrender.com";
 async function fetchUserInfo() {
   try {
     const res = await fetch(`${baseUrl}/api/get-session`, {
@@ -242,7 +243,7 @@ async function fetchUserInfo() {
       // Éviter un tableau, n'envoyer qu'une string
       formData.delete('category');
       formData.append('category', selectedGenre);
-
+        const baseUrl = "https://mozika-gasy.onrender.com";
       try {
         const res = await fetch(`${baseUrl}/api/upload`, {
           method: 'POST',
