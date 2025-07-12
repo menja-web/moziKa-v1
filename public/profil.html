@@ -113,24 +113,25 @@
       <p id="msg"></p>
     </form>
 
-    <section>
-      <h3>🎶 Tes musiques uploadées</h3>
-      <ul id="userMusics"></ul>
-    </section>
+<main>
+  <section>
+    <h3>🎶 Tes musiques uploadées</h3>
+    <ul id="userMusics"></ul>
+  </section>
 
-    <hr />
+  <hr />
 
-    <section>
-      <h3>💙 Tes musiques favorites</h3>
-      <ul id="userFavorites"></ul>
-    </section>
+  <section>
+    <h3>💙 Tes musiques favorites</h3>
+    <ul id="userFavorites"></ul>
+  </section>
 
-    <div class="confirm-box" id="confirmBox">
-      <p>🗑 Supprimer cette musique ?</p>
-      <button class="yes">Oui, supprimer</button>
-      <button class="no">Annuler</button>
-    </div>
-  </main>
+  <div class="confirm-box" id="confirmBox" style="display:none;">
+    <p>🗑 Supprimer cette musique ?</p>
+    <button class="yes" id="confirmYes">Oui, supprimer</button>
+    <button class="no" id="confirmNo">Annuler</button>
+  </div>
+</main>
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -220,34 +221,55 @@
     }
 
     // 💙 Favoris
-    async function loadUserFavorites() {
-      const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
-      const data = await res.json();
-      const list = document.getElementById("userFavorites");
-      list.innerHTML = "";
+async function loadUserFavorites() {
+  const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
+  const data = await res.json();
+  const list = document.getElementById("userFavorites");
+  list.innerHTML = "";
 
-      if (!data.favorites || data.favorites.length === 0) {
-        list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
-        return;
-      }
+  if (!data.favorites || data.favorites.length === 0) {
+    list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
+    return;
+  }
 
-      data.favorites.forEach((music, idx) => {
-        const li = document.createElement("li");
-        li.className = "music-card";
-        li.innerHTML = `
-          <strong>${music.title}</strong> (${music.category})<br>
-          <img src="${music.cover}" alt="Couverture" width="100" /><br>
-          <audio controls controlsList="nodownload" src="${music.path}"
-                 style="width:100%; margin:10px 0;"></audio><br>
-          <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
-          📥 Téléchargements : ${music.downloadCount||0}<br>
-          <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-          <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
-          <hr>
-        `;
-        list.appendChild(li);
-      });
-    }
+  data.favorites.forEach((music) => {
+    const li = document.createElement("li");
+    li.className = "music-card";
+    li.innerHTML = `
+      <strong>${music.title}</strong> (${music.category})<br>
+      <img src="${music.cover}" alt="Couverture" width="100" /><br>
+      <audio controls controlsList="nodownload" src="${music.path}"
+             style="width:100%; margin:10px 0;"></audio><br>
+      <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+      📥 Téléchargements : ${music.downloadCount||0}<br>
+      <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+      <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
+      <hr>
+    `;
+    list.appendChild(li);
+
+    // ✅ Attache l'écouteur AU bouton INSÉRÉ
+    const btn = li.querySelector(".removeFavBtn");
+    btn.addEventListener("click", () => {
+      const musicId = btn.dataset.id;
+      fetch(`${baseUrl}/api/favorites/remove`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ musicId })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            li.remove();
+          } else {
+            alert("Erreur : " + data.message);
+          }
+        });
+    });
+  });
+}
+
 
     // 🗑 Confirmation suppression / retrait
     document.addEventListener("click", e => {

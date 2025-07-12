@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
+const mongoose = require("mongoose");           // Pour validation ObjectId si besoin
 const User = require("../models/User");
+const Music = require("../models/Music");       // ← Pense à créer models/Music.js
 
 // 📥 Récupérer la session
 router.get("/get-session", (req, res) => {
@@ -65,83 +67,91 @@ router.post("/change-password", async (req, res) => {
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
+
+// 🎵 Récupérer la liste des favoris
 router.get("/favorites", async (req, res) => {
   const userId = req.session?.user?._id;
-
-  // 🚫 Session manquante
   if (!userId) {
     return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
   }
 
   try {
-    // 🔍 Récupération de l'utilisateur
-    const user = await User.findById(userId);
+    // ← AJOUT de .populate pour obtenir les objets Music complets
+    const user = await User.findById(userId).populate("favorites");
     if (!user) {
       return res.status(404).json({ status: "error", message: "Utilisateur introuvable." });
     }
 
-    // ✅ On renvoie les favoris (tableau de musiques)
     res.json({
       status: "success",
       favorites: user.favorites || []
     });
   } catch (err) {
-    console.error("❌ Erreur favorites :", err);
+    console.error("❌ Erreur récupération favoris :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur lors du chargement des favoris." });
   }
 });
+
+// ➕ Ajouter un favori
 router.post("/favorites/add", async (req, res) => {
   const userId = req.session?.user?._id;
   const { musicId } = req.body;
 
-  // 🔒 Validation indispensable !
   if (!userId) {
     return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
   }
-
-  if (!musicId) {
-    return res.status(400).json({ status: "error", message: "ID musique manquant." });
+  if (!musicId || !mongoose.Types.ObjectId.isValid(musicId)) {
+    return res.status(400).json({ status: "error", message: "ID musique invalide." });
   }
 
   try {
     await User.findByIdAndUpdate(userId, { $addToSet: { favorites: musicId } });
     res.json({ status: "success", message: "Ajouté aux favoris." });
   } catch (err) {
-    console.error("Erreur ajout favoris :", err);
+    console.error("❌ Erreur ajout favoris :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
 
-router.post("/remove-favorite", async (req, res) => {
+// ➖ Retirer un favori
+router.post("/favorites/remove", async (req, res) => {
   const userId = req.session?.user?._id;
   const { musicId } = req.body;
 
-  if (!userId || !musicId) {
-    return res.status(400).json({ status: "error", message: "Session ou ID musique manquant." });
+  if (!userId) {
+    return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
+  }
+  if (!musicId || !mongoose.Types.ObjectId.isValid(musicId)) {
+    return res.status(400).json({ status: "error", message: "ID musique invalide." });
   }
 
   try {
     await User.findByIdAndUpdate(userId, { $pull: { favorites: musicId } });
     res.json({ status: "success", message: "Musique retirée des favoris." });
   } catch (err) {
-    console.error("Erreur suppression favori :", err);
+    console.error("❌ Erreur suppression favori :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
-router.post("/delete", async (req, res) => {
+
+// 🗑️ Supprimer un upload (music)
+router.post("/music/delete", async (req, res) => {
   const userId = req.session?.user?._id;
   const { musicId } = req.body;
 
-  if (!userId || !musicId) {
-    return res.status(400).json({ status: "error", message: "Session ou ID musique manquant." });
+  if (!userId) {
+    return res.status(401).json({ status: "error", message: "Utilisateur non connecté." });
+  }
+  if (!musicId || !mongoose.Types.ObjectId.isValid(musicId)) {
+    return res.status(400).json({ status: "error", message: "ID musique invalide." });
   }
 
   try {
-    await Music.findByIdAndDelete(musicId); // ou suppression logique selon ton modèle
+    await Music.findByIdAndDelete(musicId);
     await User.findByIdAndUpdate(userId, { $pull: { uploads: musicId } });
     res.json({ status: "success", message: "Musique supprimée." });
   } catch (err) {
-    console.error("Erreur suppression musique :", err);
+    console.error("❌ Erreur suppression musique :", err);
     res.status(500).json({ status: "error", message: "Erreur serveur." });
   }
 });
