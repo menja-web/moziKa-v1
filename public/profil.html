@@ -296,20 +296,44 @@
     });
 
     // Changement de mot de passe
+    document.addEventListener("DOMContentLoaded", () => {
+    // 🔐 Changement de mot de passe
     document.getElementById("passwordForm").addEventListener("submit", async e => {
       e.preventDefault();
+
       const oldPass = document.getElementById("oldPass").value;
       const newPass = document.getElementById("newPass").value;
       const msg     = document.getElementById("msg");
-      const res     = await fetch("/api/change-password", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
-      });
-      const data = await res.json();
-      msg.textContent = data.message;
-      msg.style.color = data.status === "success" ? "green" : "red";
+
+      try {
+        const res = await fetch(`${baseUrl}/api/change-password`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            currentPassword: oldPass, // ✅ correspond au backend
+            newPassword: newPass
+          })
+        });
+
+        const data = await res.json();
+
+        msg.textContent = data.message;
+        msg.style.color = data.status === "success" ? "green" : "red";
+
+        // Effacer les champs et le message après succès
+        if (data.status === "success") {
+          document.getElementById("oldPass").value = "";
+          document.getElementById("newPass").value = "";
+          setTimeout(() => {
+            msg.textContent = "";
+          }, 5000);
+        }
+
+      } catch (err) {
+        msg.textContent = "Erreur lors de la requête.";
+        msg.style.color = "red";
+      }
     });
   });
   </script>
