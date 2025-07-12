@@ -56,6 +56,8 @@ function requireLogin(req, res, next) {
   next();
 }
 app.use("/api", require("./routes/user.route.js"));
+app.use("/api", require("./routes/auth.route.js"));
+
 
 // ─── MONGODB CONNECTION ───────────────────────────────────
 mongoose.set('bufferCommands', false);
