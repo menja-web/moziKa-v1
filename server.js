@@ -389,6 +389,7 @@ app.get('/api/favorites', requireLogin, async (req, res) => {
     const favs = (user.favorites || []).map(m => ({
       _id:           m._id,
       title:         m.title,
+      category:      m.category || 'Non défini',
       path:          m.externalUrl      || m.path,
       cover:         m.externalCoverUrl || m.cover,
       uploader:      m.uploader?.username|| 'Anonyme',
