@@ -327,21 +327,36 @@ app.post('/api/add-music-url', requireLogin, async (req, res) => {
 });
 
 // ─── FAVORIS ───────────────────────────────────────────────
-app.post('/api/add-favorite',   requireLogin, async (req, res) => {
-  await User.findByIdAndUpdate(req.session.user.id, {
-    $addToSet: { favorites: req.body.id }
-  });
-  res.json({ status:'success' });
+// ─── ROUTES FAVORIS ───────────────────────────────────────
+
+// ✅ Ajout d'un favori
+app.post('/api/add-favorite', requireLogin, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.session.userId, {
+      $addToSet: { favorites: req.body.id }
+    });
+    res.json({ status: 'success' });
+  } catch (err) {
+    res.json({ status: 'error', message: 'Erreur ajout favoris', error: err.message });
+  }
 });
-app.post('/api/remove-favorite',requireLogin, async (req, res) => {
-  await User.findByIdAndUpdate(req.session.user.id, {
-    $pull: { favorites: req.body.id }
-  });
-  res.json({ status:'success' });
+
+// ✅ Suppression d'un favori
+app.post('/api/remove-favorite', requireLogin, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.session.userId, {
+      $pull: { favorites: req.body.id }
+    });
+    res.json({ status: 'success' });
+  } catch (err) {
+    res.json({ status: 'error', message: 'Erreur suppression favoris', error: err.message });
+  }
 });
+
+// ✅ Récupération des favoris
 app.get('/api/favorites', requireLogin, async (req, res) => {
   if (!req.session.userId) {
-    return res.json({ status: "error", message: "Utilisateur non connecté." });
+    return res.json({ status: 'error', message: 'Utilisateur non connecté.' });
   }
 
   try {
@@ -367,6 +382,7 @@ app.get('/api/favorites', requireLogin, async (req, res) => {
     res.json({ status: 'error', message: 'Erreur serveur', error: err.message });
   }
 });
+
 
 
 // ─── STATS UNIQUES ─────────────────────────────────────────
