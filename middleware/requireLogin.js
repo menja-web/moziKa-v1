@@ -1,5 +1,5 @@
 function requireLogin(req, res, next) {
-  if (!req.session || !req.session.user) {
+  if (!req.session || !req.session.userId) {
     return res.status(403).json({
       status: 'error',
       message: 'Non connecté. Veuillez vous authentifier.'
