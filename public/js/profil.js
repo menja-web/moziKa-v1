@@ -165,23 +165,17 @@ document.addEventListener("click", async e => {
 
 // ————————————————————————————————
 document.addEventListener("DOMContentLoaded", () => {
-  const changeBtn = document.getElementById("changePasswordBtn");
   const form = document.getElementById("passwordForm");
+  const msg = document.getElementById("msg");
 
-  // ✅ Lorsque le bouton est cliqué, affiche ou cache le formulaire
-  changeBtn?.addEventListener("click", () => {
-    form?.classList.toggle("hidden");
-  });
-
-  // ✅ Lors de la soumission du formulaire
-  form?.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const newPassword = document.getElementById("newPassword")?.value.trim();
-    const msg = document.getElementById("passwordMessage");
+    const oldPass = document.getElementById("oldPass")?.value.trim();
+    const newPass = document.getElementById("newPass")?.value.trim();
 
-    if (!newPassword || newPassword.length < 6) {
-      msg.textContent = "❌ Mot de passe trop court.";
+    if (!oldPass || !newPass || newPass.length < 6) {
+      msg.textContent = "❌ Nouveau mot de passe trop court.";
       msg.style.color = "red";
       return;
     }
@@ -191,27 +185,29 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: newPassword })
+        body: JSON.stringify({ oldPass, newPass })
       });
 
       const result = await res.json();
+      console.log("🔐 Changement mot de passe :", result);
+
       if (result.status === "success") {
-        msg.textContent = "✅ Mot de passe mis à jour.";
+        msg.textContent = "✅ Mot de passe mis à jour !";
         msg.style.color = "green";
-        form.classList.add("hidden");
         form.reset();
       } else {
-        msg.textContent = "❌ " + (result.message || "Échec mise à jour.");
+        msg.textContent = "❌ " + (result.message || "Erreur.");
         msg.style.color = "red";
       }
 
     } catch (err) {
-      console.error("Erreur update mot de passe :", err);
+      console.error("⚠️ Erreur :", err);
       msg.textContent = "❌ Erreur serveur.";
       msg.style.color = "red";
     }
   });
 });
+
 
 // 💙 Favoris
 async function loadUserFavorites() {

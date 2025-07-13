@@ -519,28 +519,22 @@ app.post('/api/reset-request', async (req, res) => {
 });
 
 // Application du nouveau mot de passe
-app.post('/api/reset-password', (req, res) => {
-  const { token, newPassword } = req.body;
-  const tokens = JSON.parse(fs.readFileSync(resetFile));
-  const entry  = tokens.find(t => t.token === token);
-  if (!entry || Date.now() > entry.expiresAt) {
-    return res.status(400).json({ status:'error', message:'Lien invalide ou expiré.' });
+app.post('/api/password/update', requireLogin, async (req, res) => {
+  const { oldPass, newPass } = req.body;
+  const user = await User.findById(req.session.userId);
+
+  const match = await bcrypt.compare(oldPass, user.password);
+  if (!match) {
+    return res.json({ status: 'error', message: 'Ancien mot de passe incorrect.' });
   }
-  User.findOne({ email: entry.email })
-    .then(u => {
-      u.password = bcrypt.hashSync(newPassword, 10);
-      return u.save();
-    })
-    .then(() => {
-      const remaining = tokens.filter(t => t.token !== token);
-      fs.writeFileSync(resetFile, JSON.stringify(remaining, null, 2));
-      res.json({ status:'success', message:'Mot de passe modifié !' });
-    })
-    .catch(err => {
-      console.error('reset-password error:', err);
-      res.status(500).json({ status:'error', message:'Erreur serveur.' });
-    });
+
+  const hashed = await bcrypt.hash(newPass, 10);
+  user.password = hashed;
+  await user.save();
+
+  res.json({ status: 'success', message: 'Mot de passe mis à jour.' });
 });
+
 
 
 // ─── PROFILE PHOTOS & CREATORS ────────────────────────────
