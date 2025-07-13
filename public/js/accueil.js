@@ -139,12 +139,34 @@ async function loadUserMusics() {
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
-      <button class="shareBtn" data-id="${music._id}">🔗 Partager</button>
+      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
+      <span class="shareMessage hidden">📋 Lien copié !</span>
       <hr>
     `;
     list.appendChild(li);
   });
 }
+  // 🔗 Partage de lien
+  document.addEventListener("click", async (e) => {
+    if (e.target.classList.contains("shareBtn")) {
+      const musicId = e.target.dataset.id;
+      const url = `${window.location.origin}/music/${musicId}`;
+
+      try {
+        await navigator.clipboard.writeText(url);
+
+        const msg = document.createElement("span");
+        msg.textContent = "📋 Lien copié !";
+        msg.className = "shareMessage";
+        e.target.insertAdjacentElement("afterend", msg);
+
+        setTimeout(() => msg.remove(), 2000);
+      } catch (err) {
+        alert("❌ Impossible de copier le lien.");
+        console.error("Erreur partage :", err);
+      }
+    }
+  });
 
 // 💙 Favoris
 async function loadUserFavorites() {
@@ -171,6 +193,8 @@ async function loadUserFavorites() {
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="shareBtn" data-id="${music._id}">🔗 Partager</button>
       <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
+      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
+      <span class="shareMessage hidden">📋 Lien copié !</span>
       <hr>
     `;
     list.appendChild(li);
