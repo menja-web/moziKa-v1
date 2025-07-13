@@ -301,7 +301,7 @@ audio::-webkit-media-controls-panel {
 }
 .shareMessage {
   margin-left: 8px;
-  color: green;
   font-weight: bold;
+  color: green;
 }
 
