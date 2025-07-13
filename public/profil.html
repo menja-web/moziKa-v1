@@ -133,142 +133,192 @@
   </div>
 </main>
 
-  <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Profil utilisateur - MoziKa</title>
-  <link rel="stylesheet" href="/css/style.css" />
-  <style>
-    #deleteMessage {
-      font-weight: bold;
-      font-size: 1.1rem;
-      margin-bottom: 15px;
-    }
-    .confirm-box {
-      background: white;
-      border: 2px solid #4a90e2;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      padding: 15px 20px;
-      max-width: 300px;
-      margin: 15px auto;
-      text-align: center;
-      display: none;
-      z-index: 99;
-    }
-    .confirm-box p {
-      margin-bottom: 10px;
-      font-weight: bold;
-      color: #333;
-    }
-    .confirm-box button {
-      margin: 5px 10px;
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .confirm-box .yes {
-      background-color: #e74c3c;
-      color: white;
-    }
-    .confirm-box .no {
-      background-color: #ccc;
-      color: #333;
-    }
-    .music-card {
-      position: relative;
-      margin-bottom: 20px;
-    }
-    .music-card hr {
-      margin: 10px 0;
-      border: none;
-      border-top: 1px solid #eee;
-    }
-    form {
-      margin: 30px auto 40px;
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      max-width: 400px;
-    }
-    form input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    form button {
-      background: #4a90e2;
-      color: white;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      width: 100%;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #msg {
-      margin-top: 10px;
-      text-align: center;
-    }
-  </style>
-  <meta name="theme-color" content="#209CEE">
-</head>
-<body>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const baseUrl = "https://mozika-gasy.onrender.com";
+  let user = null;
+  const deleteMsg  = document.getElementById("deleteMessage");
+  const confirmBox = document.getElementById("confirmBox");
+  let targetId     = "";
+  let targetCard   = null;
+  let isRemovingFavorite = false;
 
-  <section id="feedbackZone" style="text-align:center; margin-top:20px;">
-    <div id="deleteMessage" style="display:none;"></div>
-  </section>
+  // 🔓 Déconnexion
+  document.getElementById("logoutLink").addEventListener("click", e => {
+    e.preventDefault();
+    fetch(`${baseUrl}/api/logout`, { credentials: "include" })
+      .finally(() => window.location.href = "login.html");
+  });
 
-  <header>
-    <h1>🎵 MoziKa</h1>
-    <nav>
-      <a href="./accueil.html">Accueil</a>
-      <a href="upload.html">Ajouter une musique</a>
-      <a href="/logout" id="logoutLink">Déconnexion</a>
-    </nav>
-  </header>
+  // 👤 Récupération de la session
+  fetch(`${baseUrl}/api/get-session`, { credentials: "include" })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status !== "success" || !data.user) {
+        window.location.href = "login.html";
+        return;
+      }
+      user = data.user;
+      document.getElementById("username").textContent = user.username;
+      document.getElementById("email").textContent    = user.email;
+      loadUserMusics();
+      loadUserFavorites();
+    })
+    .catch(() => window.location.href = "login.html");
 
-  <main>
-    <h2>Mon Profil</h2>
-    <p><strong>👋 Bienvenue :</strong> <span id="username">...</span></p>
-    <p><strong>📧 E-mail :</strong> <span id="email">...</span></p>
+  // 🎶 Chargement des musiques uploadées
+  async function loadUserMusics() {
+    const res  = await fetch(`${baseUrl}/api/musics`, { credentials: "include" });
+    const data = await res.json();
+    const list = document.getElementById("userMusics");
+    list.innerHTML = "";
 
-    <form id="passwordForm" onsubmit="return false;">
-      <h3 style="text-align:center; color:#4a90e2;">🔒 Modifier mon mot de passe</h3>
-      <input type="password" id="oldPass" placeholder="Ancien mot de passe" required />
-      <input type="password" id="newPass" placeholder="Nouveau mot de passe" required />
-      <button type="submit">Changer</button>
-      <p id="msg"></p>
-    </form>
+    const musics = (data.musics || []).filter(m => m.uploader === user.username);
+    if (!musics.length) {
+      list.innerHTML = "<li style='text-align:center;color:#999;'>Aucune musique uploadée 🎶</li>";
+      return;
+    }
 
-    <section>
-      <h3>🎶 Tes musiques uploadées</h3>
-      <ul id="userMusics"></ul>
-    </section>
+    musics.forEach(music => {
+      const li = document.createElement("li");
+      li.className = "music-card";
+      li.innerHTML = `
+        <strong>${music.title}</strong> (${music.category})<br>
+        <img src="${music.cover}" alt="Couverture" width="100"/><br>
+        <audio controls controlsList="nodownload" src="${music.path}"
+               style="width:100%;margin:10px 0;"></audio><br>
+        <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+        📥 Téléchargements : ${music.downloadCount||0}<br>
+        <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+        <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
+        <hr>`;
+      list.appendChild(li);
 
-    <hr />
+      // compteur d’écoutes après 15s
+      const player = li.querySelector("audio");
+      let timer, counted = false;
+      player.addEventListener("play", () => {
+        clearTimeout(timer);
+        counted = false;
+        timer = setTimeout(async () => {
+          if (!counted) {
+            const resp = await fetch(`${baseUrl}/api/update-listen`, {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: music._id })
+            });
+            const d = await resp.json();
+            if (d.listenCount !== undefined) {
+              counted = true;
+              li.querySelector(".listenCount").textContent = `🎧 Écoutes : ${d.listenCount}`;
+            }
+          }
+        }, 15000);
+      });
+    });
+  }
 
-    <section>
-      <h3>💙 Tes musiques favorites</h3>
-      <ul id="userFavorites"></ul>
-    </section>
+  // 💙 Chargement des favoris
+  async function loadUserFavorites() {
+    const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
+    const data = await res.json();
+    const list = document.getElementById("userFavorites");
+    list.innerHTML = "";
 
-    <div class="confirm-box" id="confirmBox" style="display:none;">
-      <p>🗑 Supprimer cette musique ?</p>
-      <button class="yes" id="confirmYes">Oui, supprimer</button>
-      <button class="no"  id="confirmNo">Annuler</button>
-    </div>
-  </main>
+    if (!data.favorites || !data.favorites.length) {
+      list.innerHTML = "<li style='text-align:center;color:#999;'>Aucune musique en favoris 💙</li>";
+      return;
+    }
 
-  <!-- Seuls ces scripts externes, chargés après le DOM -->
-  <script src="/js/musique.js" defer></script>
-  <script src="/js/profil.js"  defer></script>
+    data.favorites.forEach(music => {
+      const li = document.createElement("li");
+      li.className = "music-card";
+      li.innerHTML = `
+        <strong>${music.title}</strong> (${music.category})<br>
+        <img src="${music.cover}" alt="Couverture" width="100"/><br>
+        <audio controls controlsList="nodownload" src="${music.path}"
+               style="width:100%;margin:10px 0;"></audio><br>
+        <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+        📥 Téléchargements : ${music.downloadCount||0}<br>
+        <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+        <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
+        <hr>`;
+      list.appendChild(li);
+    });
+  }
+
+  // 🗑 Confirmation suppression / retrait
+  document.addEventListener("click", e => {
+    if (e.target.matches(".deleteBtn, .removeFavBtn")) {
+      targetId     = e.target.dataset.id;
+      targetCard   = e.target.closest(".music-card");
+      isRemovingFavorite = e.target.classList.contains("removeFavBtn");
+      confirmBox.style.display = "block";
+    }
+    if (e.target.classList.contains("no")) {
+      confirmBox.style.display = "none";
+    }
+    if (e.target.classList.contains("yes")) {
+      const endpoint = isRemovingFavorite
+        ? `${baseUrl}/api/favorites/remove`
+        : `${baseUrl}/api/music/delete`;
+      fetch(endpoint, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ musicId: targetId })
+      })
+      .then(r => r.json())
+      .then(d => {
+        confirmBox.style.display = "none";
+        if (d.status === "success") {
+          targetCard.remove();
+          deleteMsg.textContent = isRemovingFavorite
+            ? "💙 Favori retiré avec succès"
+            : "✅ Supprimée avec succès";
+          deleteMsg.style.display = "inline-block";
+          setTimeout(() => deleteMsg.style.display = "none", 3000);
+          if (isRemovingFavorite) loadUserFavorites();
+        }
+      })
+      .catch(() => {
+        deleteMsg.textContent = "❌ Erreur serveur";
+        deleteMsg.style.display = "inline-block";
+        confirmBox.style.display = "none";
+      });
+    }
+  });
+
+  // 🔐 Changement de mot de passe
+  document.getElementById("passwordForm")
+    .addEventListener("submit", async e => {
+      e.preventDefault();
+      const oldPass = document.getElementById("oldPass").value;
+      const newPass = document.getElementById("newPass").value;
+      const msg     = document.getElementById("msg");
+      try {
+        const res = await fetch(`${baseUrl}/api/change-password`, {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentPassword: oldPass, newPassword: newPass })
+        });
+        const data = await res.json();
+        msg.textContent = data.message;
+        msg.style.color = data.status === "success" ? "green" : "red";
+        if (data.status === "success") {
+          document.getElementById("oldPass").value = "";
+          document.getElementById("newPass").value = "";
+          setTimeout(() => { msg.textContent = ""; }, 5000);
+        }
+      } catch {
+        msg.textContent = "Erreur lors de la requête.";
+        msg.style.color = "red";
+      }
+    });
+
+});
+</script>
+<script src="./profil.js" defer></script>
+<script src="/js/musique.js" defer></script>
+
 </body>
 </html>
