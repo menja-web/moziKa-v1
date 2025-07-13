@@ -1,8 +1,9 @@
 // server.js
 require('dotenv').config();
+
 const express    = require('express');
-const mongoose   = require('mongoose');
 const path       = require('path');
+const mongoose   = require('mongoose');
 const fs         = require('fs');
 const session    = require('express-session');
 const MongoStore = require('connect-mongo');
@@ -19,8 +20,16 @@ const app    = express();
 const PORT   = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+// Corps de la requête en JSON / URL-encoded
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Sert les fichiers statiques dans /public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// CORS (ajuste l’URL si besoin pour dev local)
 app.use(cors({
-  origin: "https://mozika-gasy.onrender.com",
+  origin: 'https://mozika-gasy.onrender.com',
   credentials: true
 }));
 
