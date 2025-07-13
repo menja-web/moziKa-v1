@@ -35,11 +35,18 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
+      align-items: flex-start;
     }
     ul#topList li strong {
       font-size: 1.2rem;
       margin-bottom: 5px;
       color: #333;
+    }
+    img.cover {
+      width: 100px;
+      margin: 10px 0;
+      border-radius: 6px;
+      object-fit: cover;
     }
     audio {
       width: 100%;
@@ -92,7 +99,6 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const fullMap = {};
     try {
-      // Charger toutes les musiques pour récupérer catégorie, uploader, etc.
       const resAll = await fetch("/api/musics");
       const { musics } = await resAll.json();
       musics.forEach(m => { fullMap[m._id] = m; });
@@ -119,43 +125,43 @@
     topData.forEach((music, index) => {
       const li = document.createElement("li");
       const full = fullMap[music._id] || {};
-      // choisir la médaille
+
+      // Médaille 🥇🥈🥉🏅
       let medal = "⭐";
       if (index === 0) medal = "🥇";
       else if (index === 1) medal = "🥈";
       else if (index === 2) medal = "🥉";
+      else if (index === 3 || index === 4) medal = "🏅";
 
-      const uploader = full.uploader || "Inconnu";
-      const category = full.category || "Non défini";
+      const uploader  = full.uploader || "Inconnu";
+      const category  = full.category || "Non défini";
+      const cover     = music.cover || "/images/default-cover.jpg";
 
       li.innerHTML = `
         <strong>${medal} #${index + 1} ${music.title}</strong>
         👤 Par ${uploader}<br>
-        <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
         🎵 Genre : ${category}<br>
+        <img class="cover" src="${cover}" alt="Couverture"/><br>
         <audio controls controlsList="nodownload"
                src="${music.path}"
-               data-path="${music.path}"
                data-id="${music._id}"></audio>
         <a class="download-link"
            href="${music.path}"
-           download
-           data-path="${music.path}">
+           download>
           📥 Télécharger
         </a>
         <div class="meta">
-          Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
+          🎧 Écoutes : <span class="listenCount">${music.listenCount || 0}</span> ·
+          📥 Téléchargements : <span class="downloadCount">${music.downloadCount || 0}</span>
         </div>
       `;
       list.appendChild(li);
 
-      // éléments pour interactions
-      const audio = li.querySelector("audio");
+      const audio        = li.querySelector("audio");
       const downloadLink = li.querySelector(".download-link");
-      const dlSpan = li.querySelector(".downloadCount");
-      const listenSpan = li.querySelector(".listenCount");
+      const dlSpan       = li.querySelector(".downloadCount");
+      const listenSpan   = li.querySelector(".listenCount");
 
-      // téléchargement
       downloadLink.addEventListener("click", async () => {
         try {
           const res = await fetch("/api/download", {
@@ -170,7 +176,6 @@
         }
       });
 
-      // incrémentation écoute après 15s
       let timer, counted;
       audio.addEventListener("play", () => {
         clearTimeout(timer);
@@ -178,7 +183,7 @@
         timer = setTimeout(async () => {
           if (!counted) {
             try {
-              const res = await fetch("/api/update-listen", {
+              const res = await fetch("/api/listen", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: music._id })
@@ -186,7 +191,7 @@
               const d = await res.json();
               if (d.status === "success") {
                 counted = true;
-                listenSpan.textContent = `🎧 Écoutes : ${d.count}`;
+                listenSpan.textContent = d.count;
               }
             } catch (e) {
               console.error("Erreur comptage écoute :", e);
@@ -195,8 +200,6 @@
         }, 15000);
       });
       audio.addEventListener("pause", () => clearTimeout(timer));
-
-      // autoplay du suivant
       audio.addEventListener("ended", () => {
         const audios = list.querySelectorAll("audio");
         const next = audios[index + 1];

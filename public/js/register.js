@@ -6,6 +6,7 @@ async function registerUser(username, email, password) {
   try {
     const response = await fetch("/api/register", {
       method: "POST",
+      credentials: "include",  // ✅ Essentiel pour que le backend envoie le cookie de session
       headers: {
         "Content-Type": "application/json"
       },
@@ -16,7 +17,7 @@ async function registerUser(username, email, password) {
     console.log("Réponse inscription :", result);
 
     if (result.status === "success") {
-      // ✅ Enregistrer les infos dans localStorage
+      // ✅ Enregistrement dans le stockage local
       localStorage.setItem("mozika_username", username);
       localStorage.setItem("userEmail", email);
 
@@ -24,7 +25,7 @@ async function registerUser(username, email, password) {
       msg.style.color = "green";
       msg.textContent = "✅ Compte créé avec succès ! Redirection...";
 
-      // ✅ Redirection vers accueil.html
+      // ✅ Redirection vers accueil
       setTimeout(() => {
         window.location.href = "accueil.html";
       }, 1500);

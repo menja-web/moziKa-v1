@@ -452,7 +452,7 @@ const top = docs.map(m => ({
   _id:          m._id,
   title:        m.title,
   path:         m.externalUrl || m.path,
-  cover:        m.externalCoverUrl || m.cover,
+  cover:         m.externalCoverUrl || m.cover,  // ✅ IMAGE FIX // ✅ ce champ doit exister
   listenCount:  m.listenCount,
   uploader:     m.uploader?.username || 'Anonyme',
   downloadCount: m.downloadCount ?? 0  // ✅ CORRECT ici

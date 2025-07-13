@@ -16,11 +16,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isFavRemoval = false;
 
   // 🔐 Déconnexion
-  logoutLink.addEventListener("click", async e => {
-    e.preventDefault();
-    await fetch(`${baseUrl}/api/logout`, { credentials: "include" });
-    window.location.href = "login.html";
+logoutLink.addEventListener("click", async e => {
+  e.preventDefault();
+  await fetch("/api/logout", {
+    method: "POST",               // ← OBLIGATOIRE 🔧
+    credentials: "include"        // ← Pour que le cookie soit transmis
   });
+  window.location.href = "login.html";
+});
+
 
   // 🔐 Vérification session
   const sessionRes  = await fetch(`${baseUrl}/api/get-session`, { credentials: "include" });
