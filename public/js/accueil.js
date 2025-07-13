@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadUserMusics();
   await loadUserFavorites();
 
-  // 🗑 Gestion des suppressions
+  // 🗑 Suppression ou retrait de favori avec confirmation
   document.addEventListener("click", e => {
     if (e.target.matches(".deleteBtn, .removeFavBtn")) {
       targetId     = e.target.dataset.id;
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.target.classList.contains("yes")) {
       const endpoint = isFavRemoval
         ? `${baseUrl}/api/remove-favorite`
-        : `${baseUrl}/api/music/delete`;
+        : `${baseUrl}/api/delete`;
 
       fetch(endpoint, {
         method: "POST",
@@ -81,6 +81,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   });
+
+  // 💙 Ajouter un favori
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("addFavBtn")) {
+      const musicId = e.target.dataset.id;
+
+      fetch("/api/add-favorite", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: musicId })
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.status === "success") {
+          alert("💙 Ajouté aux favoris !");
+          loadUserFavorites();
+        } else {
+          alert("Erreur ajout favori : " + d.message);
+        }
+      })
+      .catch(() => alert("❌ Erreur serveur"));
+    }
+  });
 });
 
 // 🎵 Musiques uploadées
@@ -108,6 +132,7 @@ async function loadUserMusics() {
       📥 Téléchargements : ${music.downloadCount || 0}<br>
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
+      <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
       <hr>
     `;
     list.appendChild(li);
