@@ -115,12 +115,15 @@ logoutLink.addEventListener("click", async e => {
 
 // 🎵 Musiques uploadées
 async function loadUserMusics() {
-  const res  = await fetch(`/api/musics`, { credentials: "include" });
+  const res = await fetch(`/api/musics`, { credentials: "include" });
   const data = await res.json();
   const list = document.getElementById("userMusics");
   list.innerHTML = "";
 
-  const uploads = (data.musics || []).filter(m => m.uploader === document.getElementById("username").textContent);
+  const uploads = (data.musics || []).filter(
+    m => m.uploader === document.getElementById("username").textContent
+  );
+
   if (uploads.length === 0) {
     list.innerHTML = `<li style="text-align:center;color:#999;">Aucune musique uploadée 🎶</li>`;
     return;
@@ -130,6 +133,7 @@ async function loadUserMusics() {
     const li = document.createElement("li");
     li.className = "music-card";
     li.dataset.id = music._id;
+
     li.innerHTML = `
       <strong>${music.title}</strong> (${music.category})<br>
       <img src="${music.cover}" alt="Couverture" width="100"/><br>
@@ -141,12 +145,12 @@ async function loadUserMusics() {
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
       <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
       <span class="shareMessage hidden">📋 Lien copié !</span>
-
       <hr>
     `;
     list.appendChild(li);
   });
 }
+
   // 🔗 Fonctionnalité Partager
   document.addEventListener("click", async (e) => {
     if (e.target.classList.contains("shareBtn")) {
@@ -172,7 +176,7 @@ async function loadUserMusics() {
 
 // 💙 Favoris
 async function loadUserFavorites() {
-  const res  = await fetch(`/api/favorites`, { credentials: "include" });
+  const res = await fetch(`/api/favorites`, { credentials: "include" });
   const data = await res.json();
   const list = document.getElementById("userFavorites");
   list.innerHTML = "";
@@ -186,6 +190,7 @@ async function loadUserFavorites() {
     const li = document.createElement("li");
     li.className = "music-card";
     li.dataset.id = music._id;
+
     li.innerHTML = `
       <strong>${music.title}</strong> (${music.category})<br>
       <img src="${music.cover}" alt="Couverture" width="100"/><br>
@@ -193,10 +198,13 @@ async function loadUserFavorites() {
       🎧 Écoutes : ${music.listenCount || 0}<br>
       📥 Téléchargements : ${music.downloadCount || 0}<br>
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-      <button class="shareBtn" data-id="${music._id}">🔗 Partager</button>
       <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
       <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
       <span class="shareMessage hidden">📋 Lien copié !</span>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"target="_blank"
+  class="fbShareBtn"
+      >📘 Partager sur Facebook</a>
+
       <hr>
     `;
     list.appendChild(li);
