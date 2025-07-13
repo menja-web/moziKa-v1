@@ -127,8 +127,6 @@ document.addEventListener("click", async e => {
   if (e.target.classList.contains("deleteBtn")) {
     const id = e.target.dataset.id;
 
-    const confirmDelete = confirm("⚠️ Confirmer la suppression de cette musique ?");
-    if (!confirmDelete) return;
 
     try {
       const res = await fetch("/api/music/delete", {
