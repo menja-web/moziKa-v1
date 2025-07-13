@@ -1,49 +1,62 @@
 document.addEventListener("DOMContentLoaded", () => {
   const baseUrl = ""; // ← Si tes routes sont relatives, laisse vide
 
-  async function loadUserFavorites() {
-    const res = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
-    const data = await res.json();
-    console.log("➡️ Favoris récupérés :", data.favorites);
-    const list = document.getElementById("userFavorites");
-    list.innerHTML = "";
+async function loadUserFavorites() {
+  const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
+  const data = await res.json();
 
-    if (!data.favorites || data.favorites.length === 0) {
-      list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
-      return;
-    }
+  console.log("➡️ Favoris récupérés :", data.favorites);
 
-    data.favorites.forEach((music) => {
-      const li = document.createElement("li");
-      li.className = "music-card";
-      li.innerHTML = `
-        <strong>${music.title}</strong> (${music.category})<br>
-        <img src="${music.cover}" alt="Couverture" width="100" /><br>
-        <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
-        <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
-        📥 Téléchargements : ${music.downloadCount || 0}<br>
-        <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-        <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
-        <hr>
-      `;
-      list.appendChild(li);
+  const list = document.getElementById("userFavorites");
+  list.innerHTML = "";
 
-      const removeBtn = li.querySelector(".removeFavBtn");
-      removeBtn.addEventListener("click", () => {
-        fetch(`${baseUrl}/api/favorites/remove`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ musicId: removeBtn.dataset.id })
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === "success") li.remove();
-            else alert("Erreur : " + data.message);
-          });
-      });
-    });
+  if (!data.favorites || data.favorites.length === 0) {
+    list.innerHTML = "<li style='text-align:center; color:#999;'>Aucune musique en favoris 💙</li>";
+    return;
   }
+  const debugArea = document.createElement("div");
+debugArea.style = "background:#eee;padding:10px;margin-bottom:10px;border:1px dashed #ccc;";
+debugArea.innerHTML = `<strong>Debug Favoris :</strong><pre>${JSON.stringify(data.favorites, null, 2)}</pre>`;
+document.body.prepend(debugArea);
+
+
+  data.favorites.forEach((music) => {
+    const li = document.createElement("li");
+    li.className = "music-card";
+    li.innerHTML = `
+      <strong>${music.title}</strong> (${music.category})<br>
+      <img src="${music.cover}" alt="Couverture" width="100" /><br>
+      <audio controls controlsList="nodownload" src="${music.path}"
+             style="width:100%; margin:10px 0;"></audio><br>
+      <span class="listenCount">🎧 Écoutes : ${music.listenCount || 0}</span><br>
+      📥 Téléchargements : ${music.downloadCount || 0}<br>
+      <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+      <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
+      <hr>
+    `;
+    list.appendChild(li);
+
+    // ✅ Suppression dynamique
+    const removeBtn = li.querySelector(".removeFavBtn");
+    removeBtn.addEventListener("click", () => {
+      fetch(`${baseUrl}/api/favorites/remove`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ musicId: removeBtn.dataset.id })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            li.remove();
+          } else {
+            alert("Erreur : " + data.message);
+          }
+        });
+    });
+  });
+}
+
 
   async function loadUserUploads() {
     const res = await fetch(`${baseUrl}/api/uploads`, { credentials: "include" });
