@@ -103,14 +103,18 @@ async function loadUserMusics() {
     const li = document.createElement("li");
     li.className = "music-card";
     li.dataset.id = music._id;
-    li.innerHTML = `
-      <strong>${music.title}</strong> (${music.category})<br>
-      <img src="${music.cover}" alt="Couverture" width="100"/><br>
-      <audio controls controlsList="nodownload" src="${music.path}"
-             style="width:100%;margin:10px 0;"></audio><br>
-      <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
-      <hr>
-    `;
+ li.innerHTML = `
+  <strong>${music.title}</strong> (${music.category})<br>
+  <img src="${music.cover}" alt="Couverture" width="100"/><br>
+  <audio controls controlsList="nodownload" src="${music.path}"
+         style="width:100%;margin:10px 0;"></audio><br>
+  <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+  📥 Téléchargements : ${music.downloadCount||0}<br>
+  <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+  <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
+  <hr>
+`;
+
     list.appendChild(li);
   });
 }
@@ -133,14 +137,18 @@ async function loadUserFavorites() {
     const li = document.createElement("li");
     li.className = "music-card";
     li.dataset.id = music._id;
-    li.innerHTML = `
-      <strong>${music.title}</strong> (${music.category})<br>
-      <img src="${music.cover}" alt="Couverture" width="100"/><br>
-      <audio controls controlsList="nodownload" src="${music.path}"
-             style="width:100%;margin:10px 0;"></audio><br>
-      <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
-      <hr>
-    `;
+li.innerHTML = `
+  <strong>${music.title}</strong> (${music.category})<br>
+  <img src="${music.cover}" alt="Couverture" width="100"/><br>
+  <audio controls controlsList="nodownload" src="${music.path}"
+         style="width:100%;margin:10px 0;"></audio><br>
+  <span class="listenCount">🎧 Écoutes : ${music.listenCount||0}</span><br>
+  📥 Téléchargements : ${music.downloadCount||0}<br>
+  <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+  <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
+  <hr>
+`;
+
     list.appendChild(li);
   });
 }

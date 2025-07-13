@@ -340,23 +340,34 @@ app.post('/api/remove-favorite',requireLogin, async (req, res) => {
   res.json({ status:'success' });
 });
 app.get('/api/favorites', requireLogin, async (req, res) => {
-  const u = await User.findById(req.session.user.id)
-    .populate({
-      path:'favorites',
-      populate:{ path:'uploader', select:'username' }
-    })
-    .lean();
-  const favs = u.favorites.map(m => ({
-    _id:           m._id,
-    title:         m.title,
-    path:          m.externalUrl || m.path,
-    cover:         m.externalCoverUrl || m.cover,
-    uploader:      m.uploader?.username || 'Anonyme',
-    listenCount:   m.listenCount  ?? 0,
-    downloadCount: m.downloadCount?? 0
-  }));
-  res.json({ status:'success', favorites: favs });
+  if (!req.session.userId) {
+    return res.json({ status: "error", message: "Utilisateur non connecté." });
+  }
+
+  try {
+    const user = await User.findById(req.session.userId)
+      .populate({
+        path: 'favorites',
+        populate: { path: 'uploader', select: 'username' }
+      })
+      .lean();
+
+    const favs = user.favorites.map(m => ({
+      _id:           m._id,
+      title:         m.title,
+      path:          m.externalUrl       || m.path,
+      cover:         m.externalCoverUrl  || m.cover,
+      uploader:      m.uploader?.username|| 'Anonyme',
+      listenCount:   m.listenCount       ?? 0,
+      downloadCount: m.downloadCount     ?? 0
+    }));
+
+    res.json({ status: 'success', favorites: favs });
+  } catch (err) {
+    res.json({ status: 'error', message: 'Erreur serveur', error: err.message });
+  }
 });
+
 
 // ─── STATS UNIQUES ─────────────────────────────────────────
 app.post('/api/listen', requireLogin, async (req, res) => {
