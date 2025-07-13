@@ -141,32 +141,34 @@ async function loadUserMusics() {
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
       <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
       <span class="shareMessage hidden">📋 Lien copié !</span>
+
       <hr>
     `;
     list.appendChild(li);
   });
 }
-  // 🔗 Partage de lien
+  // 🔗 Fonctionnalité Partager
   document.addEventListener("click", async (e) => {
     if (e.target.classList.contains("shareBtn")) {
-      const musicId = e.target.dataset.id;
-      const url = `${window.location.origin}/music/${musicId}`;
+      const url = e.target.dataset.url;
+      const msg = e.target.nextElementSibling;
 
       try {
         await navigator.clipboard.writeText(url);
-
-        const msg = document.createElement("span");
         msg.textContent = "📋 Lien copié !";
-        msg.className = "shareMessage";
-        e.target.insertAdjacentElement("afterend", msg);
+        msg.classList.remove("hidden");
 
-        setTimeout(() => msg.remove(), 2000);
+        setTimeout(() => {
+          msg.classList.add("hidden");
+        }, 2000);
       } catch (err) {
-        alert("❌ Impossible de copier le lien.");
-        console.error("Erreur partage :", err);
+        msg.textContent = "❌ Erreur copie";
+        msg.classList.remove("hidden");
+        msg.style.color = "red";
       }
     }
   });
+
 
 // 💙 Favoris
 async function loadUserFavorites() {
