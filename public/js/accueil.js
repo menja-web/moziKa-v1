@@ -14,11 +14,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isFavRemoval = false;
 
   // 🔐 Déconnexion
-  logoutLink.addEventListener("click", async e => {
-    e.preventDefault();
-    await fetch(`${baseUrl}/api/logout`, { credentials: "include" });
-    window.location.href = "login.html";
+logoutLink.addEventListener("click", async e => {
+  e.preventDefault();
+  await fetch(`${baseUrl}/api/logout`, {
+    method: "POST", // ← AJOUT ESSENTIEL
+    credentials: "include"
   });
+  window.location.href = "login.html";
+});
+
 
   // 🔍 Vérification session
   const sessionRes  = await fetch(`${baseUrl}/api/get-session`, { credentials: "include" });
