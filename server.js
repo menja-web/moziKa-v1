@@ -18,7 +18,7 @@ const Music = require('./models/Music');
 
 const app    = express();
 const PORT   = process.env.PORT || 3000;
-const isProd = process.env.NODE_ENV === 'production';
+
 
 // Corps de la requête en JSON / URL-encoded
 app.use(express.json());
@@ -27,23 +27,26 @@ app.use(express.urlencoded({ extended: true }));
 // Sert les fichiers statiques dans /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// CORS (ajuste l’URL si besoin pour dev local)
-app.use(cors({
-  origin: 'https://mozika-gasy.onrender.com',
-  credentials: true
-}));
+
 
 
 // ─── CORS & SESSION ──────────────────────────────────────
+
+const isProd = process.env.NODE_ENV === "production";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://mozika-gasy.onrender.com";
+
 app.set('trust proxy', 1);
+
 app.use(cors({
-  origin:        process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials:   true,
-  methods:       ['GET','POST','OPTIONS'],
-  allowedHeaders:['Content-Type']
+  origin: FRONTEND_URL,            // 💡 unique définition ici
+  credentials: true,
+  methods: ['GET','POST','OPTIONS'],
+  allowedHeaders: ['Content-Type']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -52,10 +55,11 @@ app.use(session({
   cookie: {
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: true,        // ✅ Cookie envoyé uniquement via HTTPS
-    sameSite: "none"     // ✅ Autorise frontend ↔ backend cross-origin
+    secure: isProd,                      // seulement en HTTPS
+    sameSite: isProd ? "none" : "lax"    // "none" si frontend ≠ backend
   }
 }));
+
 
 
 function requireLogin(req, res, next) {
