@@ -16,36 +16,26 @@ const nodemailer = require('nodemailer');
 const User  = require('./models/User');
 const Music = require('./models/Music');
 
-const app    = express();
-const PORT   = process.env.PORT || 3000;
+const app  = express();
+const PORT = process.env.PORT || 3000;
 
-
-// Corps de la requête en JSON / URL-encoded
+// ─── BODY PARSING & STATIC FILES ─────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Sert les fichiers statiques dans /public
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ─── CORS & SESSION CONFIG ───────────────────────────────
+const isProd       = process.env.NODE_ENV === 'production';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://mozika-gasy.onrender.com';
 
-
-
-// ─── CORS & SESSION ──────────────────────────────────────
-
-const isProd = process.env.NODE_ENV === "production";
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://mozika-gasy.onrender.com";
-
-app.set('trust proxy', 1);
+app.set('trust proxy', 1); // nécessaire pour secure cookies sur Render
 
 app.use(cors({
-  origin: FRONTEND_URL,            // 💡 unique définition ici
+  origin:      FRONTEND_URL,
   credentials: true,
-  methods: ['GET','POST','OPTIONS'],
+  methods:     ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -55,24 +45,18 @@ app.use(session({
   cookie: {
     maxAge:   24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure:   true,            // ← surtout si en production !
-    sameSite: 'none'           // ← important pour CORS
+    secure:   isProd,     // true en prod (HTTPS)
+    sameSite: 'none'      // pour permettre cross‐site
   }
 }));
 
-
-
-
+// ─── AUTH MIDDLEWARE ──────────────────────────────────────
 function requireLogin(req, res, next) {
-  if (!req.session.user) {
+  if (!req.session || !req.session.userId) {
     return res.status(403).json({ status:'error', message:'Non connecté.' });
   }
   next();
 }
-app.use("/api", require("./routes/auth.route.js")); // ✅ login + register
-app.use("/api", require("./routes/user.route.js")); // ✅ info + change-password
-
-
 
 // ─── MONGODB CONNECTION ───────────────────────────────────
 mongoose.set('bufferCommands', false);
@@ -80,10 +64,9 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ Erreur MongoDB :', err));
 
-// ─── STATICS & UPLOAD DIRS ────────────────────────────────
-app.use(express.static(path.join(__dirname,'public')));
-const uploadDir = path.join(__dirname,'public','uploads');
-const facesDir  = path.join(__dirname,'public','faces');
+// ─── UPLOAD DIRECTORIES ───────────────────────────────────
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+const facesDir  = path.join(__dirname, 'public', 'faces');
 [uploadDir, facesDir].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
@@ -103,7 +86,8 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// ─── AUTHENTIFICATION ─────────────────────────────────────
+
+// ─── AUTHENTIFICATION ROUTES ──────────────────────────────
 
 // 1) Envoi du code de vérification
 app.post('/api/send-code', async (req, res) => {
@@ -151,9 +135,17 @@ app.post('/api/register', async (req, res) => {
     password: hash,
     joinedAt: new Date()
   });
-  req.session.user = { id:u._id.toString(), username:u.username, email:u.email };
+
+  // Stockage de la session
+  req.session.user   = {
+    id:       u._id.toString(),
+    username: u.username,
+    email:    u.email
+  };
+  req.session.userId = u._id.toString();  // ← champ essentiel pour les routes
   delete req.session.pendingUser;
   delete req.session.verificationCode;
+
   res.json({ status:'success', message:'Inscription réussie !' });
 });
 
@@ -164,8 +156,16 @@ app.post('/api/login', async (req, res) => {
   if (!u || !(await bcrypt.compare(password, u.password))) {
     return res.status(401).json({ status:'error', message:'Identifiants invalides.' });
   }
-  req.session.user = { id:u._id.toString(), username:u.username, email:u.email };
-  res.json({ status:'success', username:u.username, email:u.email });
+
+  // Stockage de la session
+  req.session.user   = {
+    id:       u._id.toString(),
+    username: u.username,
+    email:    u.email
+  };
+  req.session.userId = u._id.toString();  // ← champ essentiel
+
+  res.json({ status:'success', username: u.username, email: u.email });
 });
 
 // 4) Logout
@@ -176,9 +176,9 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-// 5) Session & infos
+// 5) Session & infos utilisateur
 app.get('/api/get-session', (req, res) => {
-  if (!req.session.user) {
+  if (!req.session.userId) {
     return res.status(401).json({ status:'error', message:'Non connecté.' });
   }
   res.json({ status:'success', user: req.session.user });
@@ -191,12 +191,13 @@ app.get('/api/user-info', requireLogin, (req, res) => {
   });
 });
 
-// ─── MUSIQUES ──────────────────────────────────────────────
+
+// ─── MUSIQUES ROUTES ──────────────────────────────────────
 
 // GET toutes les musiques
 app.get('/api/musics', async (_req, res) => {
   const docs = await Music.find()
-    .populate('uploader','username email')
+    .populate('uploader', 'username email')
     .lean();
   const musics = docs.map(m => ({
     _id:          m._id,
@@ -212,12 +213,12 @@ app.get('/api/musics', async (_req, res) => {
   res.json({ status:'success', musics });
 });
 
-// GET musiques par user
+// GET musiques uploadées par l'utilisateur connecté
 app.get('/api/musics-by-user', requireLogin, async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.session.user.id);
+    const userId = req.session.userId;
     const docs = await Music.find({ uploader: userId })
-      .populate('uploader','username')
+      .populate('uploader', 'username')
       .lean();
     const musics = docs.map(m => ({
       _id:      m._id,
@@ -233,7 +234,7 @@ app.get('/api/musics-by-user', requireLogin, async (req, res) => {
   }
 });
 
-// UPLOAD MUSIQUE + COVER (Cloudinary)
+// UPLOAD MUSIQUE + COVER (via Cloudinary)
 app.post(
   '/api/upload',
   upload.fields([
@@ -241,15 +242,12 @@ app.post(
     { name: 'coverFile', maxCount: 1 }
   ]),
   async (req, res) => {
-    console.log('📦 Upload body:',  req.body);
-    console.log('📂 Upload files:', req.files);
-
     try {
       const musicFile = req.files?.musicFile?.[0];
       const coverFile = req.files?.coverFile?.[0];
       if (!musicFile || !coverFile) {
         return res.status(400).json({
-          status: 'error',
+          status:'error',
           message:'Fichier audio et image requis.'
         });
       }
@@ -257,15 +255,15 @@ app.post(
       const { title, category } = req.body;
       if (!title || !category) {
         return res.status(400).json({
-          status: 'error',
+          status:'error',
           message:'Titre et catégorie obligatoires.'
         });
       }
 
-      const userId = req.session?.user?.id;
+      const userId = req.session.userId;
       if (!userId) {
         return res.status(403).json({
-          status: 'error',
+          status:'error',
           message:'Utilisateur non connecté.'
         });
       }
@@ -273,12 +271,12 @@ app.post(
       const music = await Music.create({
         title,
         category,
-        uploader:      userId,
-        path:           musicFile.path,
-        cover:          coverFile.path,
-        listenCount:    0,
-        downloadCount:  0,
-        uploadedAt:     new Date()
+        uploader:     userId,
+        path:         musicFile.path,
+        cover:        coverFile.path,
+        listenCount:  0,
+        downloadCount:0,
+        uploadedAt:   new Date()
       });
 
       res.json({ status:'success', music });
@@ -292,19 +290,20 @@ app.post(
   }
 );
 
-// DELETE musique
+// DELETE une musique
 app.post('/api/delete', requireLogin, async (req, res) => {
   const { id } = req.body;
   const m = await Music.findById(id);
-  if (!m || m.uploader.toString() !== req.session.user.id) {
+  if (!m || m.uploader.toString() !== req.session.userId) {
     return res.status(404).json({
-      status:'error', message:'Non autorisé ou introuvable.'
+      status:'error',
+      message:'Non autorisé ou introuvable.'
     });
   }
   if (m.path.startsWith('/uploads'))
-    fs.unlinkSync(path.join(__dirname,'public', m.path));
+    fs.unlinkSync(path.join(__dirname, 'public', m.path));
   if (m.cover.startsWith('/uploads'))
-    fs.unlinkSync(path.join(__dirname,'public', m.cover));
+    fs.unlinkSync(path.join(__dirname, 'public', m.cover));
   await Music.findByIdAndDelete(id);
   res.json({ status:'success', message:'Musique supprimée.' });
 });
@@ -312,12 +311,16 @@ app.post('/api/delete', requireLogin, async (req, res) => {
 // ADD musique par URL externe
 app.post('/api/add-music-url', requireLogin, async (req, res) => {
   const { title, category, url, coverUrl } = req.body;
-  if (!title||!category||!url||!coverUrl) {
-    return res.status(400).json({ status:'error', message:'Champs manquants.' });
+  if (!title || !category || !url || !coverUrl) {
+    return res.status(400).json({
+      status:'error',
+      message:'Champs manquants.'
+    });
   }
   const music = await Music.create({
-    title,   category,
-    uploader:         req.session.user.id,
+    title,
+    category,
+    uploader:         req.session.userId,
     externalUrl:      url,
     externalCoverUrl: coverUrl,
     listenCount:      0,
@@ -327,105 +330,85 @@ app.post('/api/add-music-url', requireLogin, async (req, res) => {
   res.json({ status:'success', music });
 });
 
-// ─── FAVORIS ───────────────────────────────────────────────
-// ─── ROUTES FAVORIS ───────────────────────────────────────
 
-// ✅ Ajout d'un favori
-app.post("/api/add-favorite", requireLogin, async (req, res) => {
+// ─── FAVORIS ROUTES ────────────────────────────────────────
+
+// Ajout d'un favori
+app.post('/api/add-favorite', requireLogin, async (req, res) => {
   const musicId = req.body.id;
-  console.log("👉 userId session =", req.session.userId); 
+  console.log('👉 userId session =', req.session.userId);
+
+  if (!musicId) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'ID de la musique manquant.'
+    });
+  }
 
   try {
-    // 🔎 Sécurité : vérifie que musicId est bien reçu
-    if (!musicId) {
-      return res.status(400).json({
-        status: "error",
-        message: "ID de la musique manquant."
-      });
-    }
-
-    // ✅ Vérifie que l'utilisateur est connecté
-    const userId = req.session.userId;
-    if (!userId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Utilisateur non connecté."
-      });
-    }
-
-    // 🎯 Ajout du favori si non présent
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        status: "error",
-        message: "Utilisateur introuvable."
-      });
-    }
-
+    const user = await User.findById(req.session.userId);
     if (!user.favorites.includes(musicId)) {
       user.favorites.push(musicId);
       await user.save();
     }
-
-    res.json({ status: "success" });
+    res.json({ status: 'success' });
   } catch (err) {
-    console.error("Erreur ajout favoris :", err);
+    console.error('Erreur ajout favoris :', err);
     res.status(500).json({
-      status: "error",
-      message: "Erreur serveur",
+      status: 'error',
+      message:'Erreur serveur',
+      error: err.message
+    });
+  }
+});
+
+// Suppression d'un favori
+app.post('/api/remove-favorite', requireLogin, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.session.userId, {
+      $pull: { favorites: req.body.id }
+    });
+    res.json({ status:'success' });
+  } catch (err) {
+    res.json({
+      status:'error',
+      message:'Erreur suppression favoris',
+      error: err.message
+    });
+  }
+});
+
+// Récupération des favoris
+app.get('/api/favorites', requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId)
+      .populate({ path:'favorites', populate:{ path:'uploader', select:'username' } })
+      .lean();
+
+    const favs = (user.favorites || []).map(m => ({
+      _id:           m._id,
+      title:         m.title,
+      path:          m.externalUrl      || m.path,
+      cover:         m.externalCoverUrl || m.cover,
+      uploader:      m.uploader?.username|| 'Anonyme',
+      listenCount:   m.listenCount      ?? 0,
+      downloadCount: m.downloadCount    ?? 0
+    }));
+
+    res.json({ status:'success', favorites: favs });
+  } catch (err) {
+    res.json({
+      status:'error',
+      message:'Erreur serveur',
       error: err.message
     });
   }
 });
 
 
-
-
-// ✅ Suppression d'un favori
-app.post('/api/remove-favorite', requireLogin, async (req, res) => {
-  try {
-    await User.findByIdAndUpdate(req.session.userId, {
-      $pull: { favorites: req.body.id }
-    });
-    res.json({ status: 'success' });
-  } catch (err) {
-    res.json({ status: 'error', message: 'Erreur suppression favoris', error: err.message });
-  }
-});
-
-// ✅ Récupération des favoris
-app.get('/api/favorites', requireLogin, async (req, res) => {
-  if (!req.session.userId) {
-    return res.json({ status: 'error', message: 'Utilisateur non connecté.' });
-  }
-
-  try {
-    const user = await User.findById(req.session.userId)
-      .populate({
-        path: 'favorites',
-        populate: { path: 'uploader', select: 'username' }
-      })
-      .lean();
-
-    const favs = user.favorites.map(m => ({
-      _id:           m._id,
-      title:         m.title,
-      path:          m.externalUrl       || m.path,
-      cover:         m.externalCoverUrl  || m.cover,
-      uploader:      m.uploader?.username|| 'Anonyme',
-      listenCount:   m.listenCount       ?? 0,
-      downloadCount: m.downloadCount     ?? 0
-    }));
-
-    res.json({ status: 'success', favorites: favs });
-  } catch (err) {
-    res.json({ status: 'error', message: 'Erreur serveur', error: err.message });
-  }
-});
-
-
-
 // ─── STATS UNIQUES ─────────────────────────────────────────
+
+// Incrémentation des écoutes uniques
 app.post('/api/listen', requireLogin, async (req, res) => {
   const { id } = req.body;
   const m = await Music.findOneAndUpdate(
@@ -434,12 +417,14 @@ app.post('/api/listen', requireLogin, async (req, res) => {
     { new: true }
   );
   if (m) return res.json({ status:'success', count: m.listenCount });
+
   const existing = await Music.findById(id);
   return existing
     ? res.json({ status:'success', count: existing.listenCount })
     : res.status(404).json({ status:'error', message:'Musique introuvable.' });
 });
 
+// Incrémentation des téléchargements uniques
 app.post('/api/download', requireLogin, async (req, res) => {
   const { id } = req.body;
   const m = await Music.findOneAndUpdate(
@@ -448,13 +433,15 @@ app.post('/api/download', requireLogin, async (req, res) => {
     { new: true }
   );
   if (m) return res.json({ status:'success', count: m.downloadCount });
+
   const existing = await Music.findById(id);
   return existing
     ? res.json({ status:'success', count: existing.downloadCount })
     : res.status(404).json({ status:'error', message:'Musique introuvable.' });
 });
 
-// ─── TOP 5 ──────────────────────────────────────────────────
+
+// ─── TOP 5 MUSIQUES ────────────────────────────────────────
 app.get('/api/top', async (_req, res) => {
   const docs = await Music.find().sort({ listenCount:-1 }).limit(5)
     .populate('uploader','username').lean();
@@ -469,10 +456,12 @@ app.get('/api/top', async (_req, res) => {
   res.json({ status:'success', top });
 });
 
-// ─── PASSWORD RESET ────────────────────────────────────────
-const resetFile = path.join(__dirname,'resetTokens.json');
-if (!fs.existsSync(resetFile)) fs.writeFileSync(resetFile,'[]');
 
+// ─── PASSWORD RESET ────────────────────────────────────────
+const resetFile = path.join(__dirname, 'resetTokens.json');
+if (!fs.existsSync(resetFile)) fs.writeFileSync(resetFile, '[]');
+
+// Demande de réinitialisation
 app.post('/api/reset-request', async (req, res) => {
   const { email } = req.body;
   const u = await User.findOne({ email: email.toLowerCase() });
@@ -482,7 +471,7 @@ app.post('/api/reset-request', async (req, res) => {
   const expiresAt = Date.now() + 15*60*1000;
   const tokens    = JSON.parse(fs.readFileSync(resetFile));
   tokens.push({ email: u.email, token, expiresAt });
-  fs.writeFileSync(resetFile, JSON.stringify(tokens,null,2));
+  fs.writeFileSync(resetFile, JSON.stringify(tokens, null, 2));
 
   const base = isProd
     ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`
@@ -506,6 +495,7 @@ app.post('/api/reset-request', async (req, res) => {
   }
 });
 
+// Application du nouveau mot de passe
 app.post('/api/reset-password', (req, res) => {
   const { token, newPassword } = req.body;
   const tokens = JSON.parse(fs.readFileSync(resetFile));
@@ -520,7 +510,7 @@ app.post('/api/reset-password', (req, res) => {
     })
     .then(() => {
       const remaining = tokens.filter(t => t.token !== token);
-      fs.writeFileSync(resetFile, JSON.stringify(remaining,null,2));
+      fs.writeFileSync(resetFile, JSON.stringify(remaining, null, 2));
       res.json({ status:'success', message:'Mot de passe modifié !' });
     })
     .catch(err => {
@@ -529,16 +519,19 @@ app.post('/api/reset-password', (req, res) => {
     });
 });
 
-// ─── PROFILE PHOTOS & CREATORS ─────────────────────────────
-const creatorsFile = path.join(__dirname,'data','createurs.json');
+
+// ─── PROFILE PHOTOS & CREATORS ────────────────────────────
+const creatorsFile = path.join(__dirname, 'data', 'createurs.json');
 if (!fs.existsSync(path.dirname(creatorsFile))) {
-  fs.mkdirSync(path.dirname(creatorsFile), { recursive:true });
+  fs.mkdirSync(path.dirname(creatorsFile), { recursive: true });
 }
 if (!fs.existsSync(creatorsFile)) {
-  fs.writeFileSync(creatorsFile,'[]');
+  fs.writeFileSync(creatorsFile, '[]');
 }
+
 const photoUpload = multer({ dest: facesDir });
 
+// Upload / mise à jour de la photo de profil
 app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   const { username } = req.body;
   if (!username || !req.file) {
@@ -553,15 +546,21 @@ app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   const idx      = creators.findIndex(c => c.username === username);
   if (idx !== -1) creators[idx].photo = `/faces/${newName}`;
   else creators.push({ username, photo:`/faces/${newName}`, streams:0, royalties:0 });
-  fs.writeFileSync(creatorsFile, JSON.stringify(creators,null,2));
+  fs.writeFileSync(creatorsFile, JSON.stringify(creators, null, 2));
+
   res.json({ success:true, photo:`/faces/${newName}` });
 });
+
+// Lister les créateurs (pour stats ou affichage)
 app.get('/api/creators', (_req, res) => {
   const data = JSON.parse(fs.readFileSync(creatorsFile));
   res.json({ status:'success', creators: data });
 });
 
-// ─── EXPORT, PING & DÉMARRAGE ─────────────────────────────
+
+// ─── EXPORT & PING & HOME ─────────────────────────────────
+
+// Exporter toute la data (users, musics, tokens, creators)
 app.get('/api/export-data', async (_req, res) => {
   const users    = await User.find().select('-password').lean();
   const musics   = await Music.find().populate('uploader','username email').lean();
@@ -569,7 +568,16 @@ app.get('/api/export-data', async (_req, res) => {
   const creators = JSON.parse(fs.readFileSync(creatorsFile));
   res.json({ status:'success', users, musics, tokens, creators });
 });
-app.get('/api/ping', (_req, res) => res.json({ pong:true }));
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
-app.listen(PORT, () => console.log(`🚀 Serveur MoziKa sur http://localhost:${PORT}`));
+// Ping simple
+app.get('/api/ping', (_req, res) => res.json({ pong:true }));
+
+// Page d'accueil statique
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ─── DÉMARRAGE DU SERVEUR ─────────────────────────────────
+app.listen(PORT, () => {
+  console.log(`🚀 Serveur MoziKa sur http://localhost:${PORT}`);
+});
