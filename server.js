@@ -292,22 +292,38 @@ app.post(
 );
 
 // DELETE une musique
-app.post('/api/delete', requireLogin, async (req, res) => {
+app.post('/api/music/delete', requireLogin, async (req, res) => {
   const { id } = req.body;
-  const m = await Music.findById(id);
-  if (!m || m.uploader.toString() !== req.session.userId) {
-    return res.status(404).json({
-      status:'error',
-      message:'Non autorisé ou introuvable.'
+
+  try {
+    const music = await Music.findById(id);
+    if (!music || music.uploader.toString() !== req.session.userId) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Non autorisé ou introuvable.'
+      });
+    }
+
+    // Supprimer les fichiers associés (si stockés dans /uploads)
+    if (music.path?.startsWith('/uploads')) {
+      fs.unlinkSync(path.join(__dirname, 'public', music.path));
+    }
+    if (music.cover?.startsWith('/uploads')) {
+      fs.unlinkSync(path.join(__dirname, 'public', music.cover));
+    }
+
+    await Music.findByIdAndDelete(id);
+    res.json({ status: 'success', message: 'Musique supprimée.' });
+
+  } catch (err) {
+    console.error('Erreur suppression musique :', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'Erreur serveur pendant la suppression.'
     });
   }
-  if (m.path.startsWith('/uploads'))
-    fs.unlinkSync(path.join(__dirname, 'public', m.path));
-  if (m.cover.startsWith('/uploads'))
-    fs.unlinkSync(path.join(__dirname, 'public', m.cover));
-  await Music.findByIdAndDelete(id);
-  res.json({ status:'success', message:'Musique supprimée.' });
 });
+
 
 // ADD musique par URL externe
 app.post('/api/add-music-url', requireLogin, async (req, res) => {

@@ -123,6 +123,37 @@ async function loadUserMusics() {
   });
 }
 
+document.addEventListener("click", async e => {
+  if (e.target.classList.contains("deleteBtn")) {
+    const id = e.target.dataset.id;
+
+    const confirmDelete = confirm("⚠️ Confirmer la suppression de cette musique ?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch("/api/music/delete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+
+      const json = await res.json();
+      console.log("Suppression :", json);
+
+      if (json.status === "success") {
+        alert("✅ Musique supprimée !");
+        e.target.closest("li")?.remove();  // Retire l’élément visuellement
+      } else {
+        alert("❌ " + json.message);
+      }
+
+    } catch (err) {
+      console.error("Erreur suppression :", err);
+      alert("❌ Erreur serveur.");
+    }
+  }
+});
 
 // ————————————————————————————————
 // 💙 Favoris
