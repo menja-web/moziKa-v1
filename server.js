@@ -179,8 +179,9 @@ app.post('/api/logout', (req, res) => {
 // 5) Session & infos utilisateur
 app.get('/api/get-session', (req, res) => {
   if (!req.session.userId) {
-    return res.status(401).json({ status:'error', message:'Non connecté.' });
-  }
+  return res.status(401).json({ status:'error', message:'Non connecté.' });
+}
+
   res.json({ status:'success', user: req.session.user });
 });
 app.get('/api/user-info', requireLogin, (req, res) => {

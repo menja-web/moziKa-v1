@@ -6,6 +6,7 @@ async function loginUser(email, password) {
   try {
     const response = await fetch("/api/login", {
       method: "POST",
+      credentials: "include",   // ✅ indispensable pour envoyer et recevoir les cookies
       headers: {
         "Content-Type": "application/json"
       },
