@@ -139,6 +139,7 @@ async function loadUserMusics() {
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
+      <button class="shareBtn" data-id="${music._id}">🔗 Partager</button>
       <hr>
     `;
     list.appendChild(li);
@@ -168,6 +169,7 @@ async function loadUserFavorites() {
       🎧 Écoutes : ${music.listenCount || 0}<br>
       📥 Téléchargements : ${music.downloadCount || 0}<br>
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
+      <button class="shareBtn" data-id="${music._id}">🔗 Partager</button>
       <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
       <hr>
     `;

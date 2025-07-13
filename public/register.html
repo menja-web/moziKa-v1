@@ -127,7 +127,10 @@
   <script>
 // ✅ Vérifie session au retour mobile
 fetch('/api/get-session', { credentials: 'include' })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) throw new Error("Session invalide");
+    return res.json();
+  })
   .then(data => {
     if (data.status === "error") {
       const saved = localStorage.getItem("pendingUser");
@@ -137,8 +140,9 @@ fetch('/api/get-session', { credentials: 'include' })
       }
     }
   })
-  .catch(err => console.error("Erreur vérification session :", err));
-
+  .catch(err => {
+    console.warn("Session expirée ou erreur réseau :", err);
+  });
 
     // Étape 1 → Envoi
     document.getElementById("stepOneForm").addEventListener("submit", async (e) => {
