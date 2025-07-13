@@ -126,23 +126,22 @@
 
   <script>
 // ✅ Vérifie session au retour mobile
-fetch('/api/get-session', { credentials: 'include' })
-  .then(res => {
-    if (!res.ok) throw new Error("Session invalide");
-    return res.json();
-  })
-  .then(data => {
-    if (data.status === "error") {
-      const saved = localStorage.getItem("pendingUser");
-      if (saved) {
+  // Vérifie si la session existe avant de valider l'inscription
+  fetch('/api/get-session', { credentials: 'include' })
+    .then(res => {
+      if (!res.ok) throw new Error("Session invalide");
+      return res.json();
+    })
+    .then(data => {
+      if (data.status === "error") {
         alert("⏱️ Session expirée. Recommence l'inscription.");
         window.location.href = "/register.html";
       }
-    }
-  })
-  .catch(err => {
-    console.warn("Session expirée ou erreur réseau :", err);
-  });
+    })
+    .catch(() => {
+      // Aucune action bloquante ici → c’est juste une vérif
+      console.log("Session absente ou expirée.");
+    });
 
     // Étape 1 → Envoi
     document.getElementById("stepOneForm").addEventListener("submit", async (e) => {
