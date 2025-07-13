@@ -16,12 +16,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🔐 Déconnexion
 logoutLink.addEventListener("click", async e => {
   e.preventDefault();
-  await fetch(`${baseUrl}/api/logout`, {
-    method: "POST", // ← AJOUT ESSENTIEL
-    credentials: "include"
-  });
+- await fetch(`${baseUrl}/api/logout`, { credentials: "include" });
++ await fetch(`${baseUrl}/api/logout`, {
++   method: "POST",
++   credentials: "include"
++ });
   window.location.href = "login.html";
 });
+
 
 
   // 🔍 Vérification session
