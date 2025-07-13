@@ -129,23 +129,14 @@
   // Vérifie si la session est active via /api/get-session
   fetch('/api/get-session', { credentials: 'include' })
     .then(res => {
-      if (!res.ok) {
-        return null;
-      }
+      if (!res.ok) return null;
       return res.json();
     })
     .then(data => {
-      if (!data || data.status !== "success") {
-        const saved = localStorage.getItem("pendingUser");
-        if (saved) {
-          alert("⏱️ Session expirée. Recommence l'inscription.");
-          window.location.href = "/register.html";
-        }
-      }
+      // Tu peux faire autre chose ici si besoin, ou juste ne rien faire
     })
-    .catch(err => {
-      console.warn("Erreur de session :", err);
-      // Ne bloque pas le formulaire
+    .catch(() => {
+      // Silence total → pas de log ni d'alerte
     });
 
     // Étape 1 → Envoi
