@@ -125,25 +125,26 @@ async function loadUserMusics() {
 
 document.addEventListener("click", async e => {
   if (e.target.classList.contains("deleteBtn")) {
-    const id = e.target.dataset.id;
-
+    const musicId = e.target.dataset.id;
 
     try {
       const res = await fetch("/api/music/delete", {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
+        credentials: "include",  // envoie le cookie connect.sid
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ id: musicId })
       });
 
-      const json = await res.json();
-      console.log("Suppression :", json);
+      const result = await res.json();
+      console.log("Suppression :", result);
 
-      if (json.status === "success") {
-        alert("✅ Musique supprimée !");
-        e.target.closest("li")?.remove();  // Retire l’élément visuellement
+      if (result.status === "success") {
+        // ✅ Retire la carte visuellement
+        e.target.closest("li")?.remove();
       } else {
-        alert("❌ " + json.message);
+        alert("❌ " + (result.message || "Erreur suppression"));
       }
 
     } catch (err) {
@@ -152,6 +153,7 @@ document.addEventListener("click", async e => {
     }
   }
 });
+
 
 // ————————————————————————————————
 // 💙 Favoris
