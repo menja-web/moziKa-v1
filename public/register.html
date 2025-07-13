@@ -130,7 +130,6 @@
   fetch('/api/get-session', { credentials: 'include' })
     .then(res => {
       if (!res.ok) {
-        console.warn("Session non valide :", res.status);
         return null;
       }
       return res.json();
