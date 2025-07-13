@@ -14,17 +14,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isFavRemoval = false;
 
   // 🔐 Déconnexion
-logoutLink.addEventListener("click", async e => {
-  e.preventDefault();
-- await fetch(`${baseUrl}/api/logout`, { credentials: "include" });
-+ await fetch(`${baseUrl}/api/logout`, {
-+   method: "POST",
-+   credentials: "include"
-+ });
-  window.location.href = "login.html";
-});
-
-
+  logoutLink.addEventListener("click", async e => {
+    e.preventDefault();
+    await fetch(`${baseUrl}/api/logout`, {
+      method: "POST",
+      credentials: "include"
+    });
+    window.location.href = "login.html";
+  });
 
   // 🔍 Vérification session
   const sessionRes  = await fetch(`${baseUrl}/api/get-session`, { credentials: "include" });
@@ -72,7 +69,7 @@ logoutLink.addEventListener("click", async e => {
           targetCard.remove();
           deleteMsg.textContent = isFavRemoval
             ? "💙 Favori retiré avec succès"
-            : "✅ Supprimée avec succès";
+            : "✅ Supprimé avec succès";
           deleteMsg.style.display = "inline-block";
           setTimeout(() => deleteMsg.style.display = "none", 3000);
           if (isFavRemoval) loadUserFavorites();
@@ -111,11 +108,31 @@ logoutLink.addEventListener("click", async e => {
       .catch(() => alert("❌ Erreur serveur"));
     }
   });
+
+  // 🔗 Copier le lien + Facebook share
+  document.addEventListener("click", async (e) => {
+    // Copier le lien
+    if (e.target.classList.contains("shareBtn")) {
+      const url = e.target.dataset.url;
+      const msg = e.target.nextElementSibling;
+
+      try {
+        await navigator.clipboard.writeText(url);
+        msg.textContent = "📋 Lien copié !";
+        msg.classList.remove("hidden");
+        setTimeout(() => msg.classList.add("hidden"), 2000);
+      } catch (err) {
+        msg.textContent = "❌ Erreur copie";
+        msg.classList.remove("hidden");
+        msg.style.color = "red";
+      }
+    }
+  });
 });
 
 // 🎵 Musiques uploadées
 async function loadUserMusics() {
-  const res = await fetch(`/api/musics`, { credentials: "include" });
+  const res  = await fetch(`/api/musics`, { credentials: "include" });
   const data = await res.json();
   const list = document.getElementById("userMusics");
   list.innerHTML = "";
@@ -123,7 +140,6 @@ async function loadUserMusics() {
   const uploads = (data.musics || []).filter(
     m => m.uploader === document.getElementById("username").textContent
   );
-
   if (uploads.length === 0) {
     list.innerHTML = `<li style="text-align:center;color:#999;">Aucune musique uploadée 🎶</li>`;
     return;
@@ -144,39 +160,19 @@ async function loadUserMusics() {
       <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
       <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
-      <span class="shareMessage hidden">📋 Lien copié !</span>
+      <span class="shareMessage hidden">📋 Lien copié !</span><br>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"
+         target="_blank"
+         class="fbShareBtn">📘 Partager sur Facebook</a>
       <hr>
     `;
     list.appendChild(li);
   });
 }
 
-  // 🔗 Fonctionnalité Partager
-  document.addEventListener("click", async (e) => {
-    if (e.target.classList.contains("shareBtn")) {
-      const url = e.target.dataset.url;
-      const msg = e.target.nextElementSibling;
-
-      try {
-        await navigator.clipboard.writeText(url);
-        msg.textContent = "📋 Lien copié !";
-        msg.classList.remove("hidden");
-
-        setTimeout(() => {
-          msg.classList.add("hidden");
-        }, 2000);
-      } catch (err) {
-        msg.textContent = "❌ Erreur copie";
-        msg.classList.remove("hidden");
-        msg.style.color = "red";
-      }
-    }
-  });
-
-
 // 💙 Favoris
 async function loadUserFavorites() {
-  const res = await fetch(`/api/favorites`, { credentials: "include" });
+  const res  = await fetch(`/api/favorites`, { credentials: "include" });
   const data = await res.json();
   const list = document.getElementById("userFavorites");
   list.innerHTML = "";
@@ -200,11 +196,10 @@ async function loadUserFavorites() {
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
       <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
-      <span class="shareMessage hidden">📋 Lien copié !</span>
-      <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"target="_blank"
-  class="fbShareBtn"
-      >📘 Partager sur Facebook</a>
-
+      <span class="shareMessage hidden">📋 Lien copié !</span><br>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"
+         target="_blank"
+         class="fbShareBtn">📘 Partager sur Facebook</a>
       <hr>
     `;
     list.appendChild(li);
