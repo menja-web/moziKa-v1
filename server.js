@@ -448,15 +448,16 @@ app.get('/api/top', async (_req, res) => {
   const docs = await Music.find().sort({ listenCount:-1 }).limit(5)
     .populate('uploader','username').lean();
 
-  const top = docs.map(m => ({
-    _id:        m._id,
-    title:      m.title,
-    path:       m.externalUrl || m.path,
-    cover:      m.externalCoverUrl || m.cover, // ✅ ce champ doit exister
-    listenCount:m.listenCount,
-    uploader:   m.uploader?.username || 'Anonyme'
-    + downloadCount: m.downloadCount ?? 0   // ← AJOUT ICI 🔧
-  }));
+const top = docs.map(m => ({
+  _id:          m._id,
+  title:        m.title,
+  path:         m.externalUrl || m.path,
+  cover:        m.externalCoverUrl || m.cover,
+  listenCount:  m.listenCount,
+  uploader:     m.uploader?.username || 'Anonyme',
+  downloadCount: m.downloadCount ?? 0  // ✅ CORRECT ici
+}));
+
 
   res.json({ status:'success', top });
 });
