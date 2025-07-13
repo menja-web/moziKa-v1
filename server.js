@@ -330,16 +330,13 @@ app.post('/api/add-music-url', requireLogin, async (req, res) => {
 // ─── ROUTES FAVORIS ───────────────────────────────────────
 
 // ✅ Ajout d'un favori
-app.post('/api/add-favorite', requireLogin, async (req, res) => {
-  try {
-    await User.findByIdAndUpdate(req.session.userId, {
-      $addToSet: { favorites: req.body.id }
-    });
-    res.json({ status: 'success' });
-  } catch (err) {
-    res.json({ status: 'error', message: 'Erreur ajout favoris', error: err.message });
-  }
+app.post("/api/add-favorite", requireLogin, async (req, res) => {
+  await User.findByIdAndUpdate(req.session.userId, {
+    $addToSet: { favorites: req.body.id }
+  });
+  res.json({ status: "success" });
 });
+
 
 // ✅ Suppression d'un favori
 app.post('/api/remove-favorite', requireLogin, async (req, res) => {
