@@ -1,17 +1,17 @@
 // server.js
 require('dotenv').config();
 
-const express    = require('express');
-const path       = require('path');
-const mongoose   = require('mongoose');
-const fs         = require('fs');
-const session    = require('express-session');
-const MongoStore = require('connect-mongo');
-const multer     = require('multer');
-const bcrypt     = require('bcrypt');
-const crypto     = require('crypto');
-const cors       = require('cors');
-const nodemailer = require('nodemailer');
+const express     = require('express');
+const path        = require('path');
+const mongoose    = require('mongoose');
+const fs          = require('fs');
+const session     = require('express-session');
+const MongoStore  = require('connect-mongo');
+const multer      = require('multer');
+const bcrypt      = require('bcrypt');
+const crypto      = require('crypto');
+const cors        = require('cors');
+const nodemailer  = require('nodemailer');
 
 const User  = require('./models/User');
 const Music = require('./models/Music');
@@ -20,42 +20,51 @@ const app    = express();
 const PORT   = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
-// Corps de la requête en JSON / URL-encoded
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Connexion à MongoDB
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connecté'))
+.catch(err => console.error('❌ Erreur MongoDB :', err));
 
-// Sert les fichiers statiques dans /public
-app.use(express.static(path.join(__dirname, 'public')));
-
-// CORS (ajuste l’URL si besoin pour dev local)
-app.use(cors({
-  origin: 'https://mozika-gasy.onrender.com',
-  credentials: true
-}));
-
-
-// ─── CORS & SESSION ──────────────────────────────────────
+// Pour que les cookies fonctionnent derrière un proxy (Render, etc.)
 app.set('trust proxy', 1);
+
+// Origine front-end dynamique selon l’environnement
+const FRONTEND_URL = process.env.FRONTEND_URL
+  || (isProd
+      ? 'https://mozika-gasy.onrender.com'
+      : 'http://localhost:3000');
+
+// CORS – autorise front-end et envoie les cookies
 app.use(cors({
-  origin:        process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials:   true,
-  methods:       ['GET','POST','OPTIONS'],
-  allowedHeaders:['Content-Type']
+  origin:         FRONTEND_URL,
+  credentials:    true,
+  methods:        ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
 }));
+
+// Parser JSON et URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Gestion des sessions
 app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
+  secret:            process.env.SESSION_SECRET,
+  resave:            false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  store:             MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge:   24 * 60 * 60 * 1000,       // 1 jour
     httpOnly: true,
-    secure: true,        // ✅ Cookie envoyé uniquement via HTTPS
-    sameSite: "none"     // ✅ Autorise frontend ↔ backend cross-origin
+    secure:   isProd,                   // cookie HTTPS seulement en production
+    sameSite: isProd ? 'none' : 'lax'   // none en prod cross‐site, lax en dev local
   }
 }));
+
+// Sert les fichiers statiques depuis /public
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 function requireLogin(req, res, next) {
