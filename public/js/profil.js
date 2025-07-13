@@ -164,6 +164,55 @@ document.addEventListener("click", async e => {
 
 
 // ————————————————————————————————
+document.addEventListener("DOMContentLoaded", () => {
+  const changeBtn = document.getElementById("changePasswordBtn");
+  const form = document.getElementById("passwordForm");
+
+  // ✅ Lorsque le bouton est cliqué, affiche ou cache le formulaire
+  changeBtn?.addEventListener("click", () => {
+    form?.classList.toggle("hidden");
+  });
+
+  // ✅ Lors de la soumission du formulaire
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const newPassword = document.getElementById("newPassword")?.value.trim();
+    const msg = document.getElementById("passwordMessage");
+
+    if (!newPassword || newPassword.length < 6) {
+      msg.textContent = "❌ Mot de passe trop court.";
+      msg.style.color = "red";
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/password/update", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword })
+      });
+
+      const result = await res.json();
+      if (result.status === "success") {
+        msg.textContent = "✅ Mot de passe mis à jour.";
+        msg.style.color = "green";
+        form.classList.add("hidden");
+        form.reset();
+      } else {
+        msg.textContent = "❌ " + (result.message || "Échec mise à jour.");
+        msg.style.color = "red";
+      }
+
+    } catch (err) {
+      console.error("Erreur update mot de passe :", err);
+      msg.textContent = "❌ Erreur serveur.";
+      msg.style.color = "red";
+    }
+  });
+});
+
 // 💙 Favoris
 async function loadUserFavorites() {
   const res  = await fetch(`${baseUrl}/api/favorites`, { credentials: "include" });
