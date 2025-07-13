@@ -53,12 +53,13 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge:   24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: isProd,                      // seulement en HTTPS
-    sameSite: isProd ? "none" : "lax"    // "none" si frontend ≠ backend
+    secure:   true,            // ← surtout si en production !
+    sameSite: 'none'           // ← important pour CORS
   }
 }));
+
 
 
 
@@ -331,27 +332,52 @@ app.post('/api/add-music-url', requireLogin, async (req, res) => {
 
 // ✅ Ajout d'un favori
 app.post("/api/add-favorite", requireLogin, async (req, res) => {
-  const musicId = req.body.id; // 💡 Assure-toi que frontend envoie { id }
-
-  if (!req.session.userId) {
-    return res.status(403).json({
-      status: "error",
-      message: "Utilisateur non connecté"
-    });
-  }
+  const musicId = req.body.id;
+  console.log("👉 userId session =", req.session.userId); 
 
   try {
-    const user = await User.findById(req.session.userId);
+    // 🔎 Sécurité : vérifie que musicId est bien reçu
+    if (!musicId) {
+      return res.status(400).json({
+        status: "error",
+        message: "ID de la musique manquant."
+      });
+    }
+
+    // ✅ Vérifie que l'utilisateur est connecté
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Utilisateur non connecté."
+      });
+    }
+
+    // 🎯 Ajout du favori si non présent
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "Utilisateur introuvable."
+      });
+    }
+
     if (!user.favorites.includes(musicId)) {
       user.favorites.push(musicId);
-      await user.save(); // 💾 Enregistrement nécessaire
+      await user.save();
     }
+
     res.json({ status: "success" });
   } catch (err) {
     console.error("Erreur ajout favoris :", err);
-    res.json({ status: "error", message: "Erreur serveur", error: err.message });
+    res.status(500).json({
+      status: "error",
+      message: "Erreur serveur",
+      error: err.message
+    });
   }
 });
+
 
 
 
