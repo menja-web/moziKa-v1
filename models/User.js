@@ -23,12 +23,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  favorites: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Music'
-    }
-  ]
+favorites: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Music'
+}]
 })
 
 module.exports = mongoose.model('User', userSchema)
