@@ -30,3 +30,4 @@ git clone https://github.com/menja-web/moziKa-v1.git
 cd moziKa-v1
 npm install
 node server.js
+"# MOzika-apk" 
