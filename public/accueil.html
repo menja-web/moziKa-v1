@@ -359,23 +359,39 @@ li.innerHTML = `
   <div class="meta">
     🎵 ${music.category} • 📅 ${music.uploadedAt?.split("T")[0]}
   </div>
-  <audio controls controlsList="nodownload" data-id="${music._id}" src="${music.path}"></audio>
-  <a class="download-link" data-id="${music._id}" href="${music.path}" download>Télécharger</a>
+  <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin: 10px 0;"></audio>
+  <a class="download-link" href="${music.path}" download>📥 Télécharger</a>
   <button class="favBtn" data-id="${music._id}">
     ${isFav ? '❤️ Supprimé' : '🤍 Ajouter aux favoris'}
+  </button><br>
+
+  <!-- 🔗 Partage lien direct -->
+  <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">
+    🔗 Copier le lien
   </button>
-  
-  <!-- 🔗 Partage -->
-  <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
   <span class="shareMessage hidden">📋 Lien copié !</span><br>
-  <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}" 
-     target="_blank" class="fbShareBtn">📘 Partager sur Facebook</a>
-  
+
+  <!-- 📘 Bouton Facebook avec icône SVG -->
+  <a
+    href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"
+    target="_blank"
+    class="fbShareBtn"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+      style="vertical-align: middle; margin-right: 6px;"
+      viewBox="0 0 512 512" fill="white">
+      <path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.5 90.8 225.8 209 240v-168h-63v-72h63v-55.2c0-62.2 37-96.8 93.7-96.8
+      27.1 0 55.5 4.8 55.5 4.8v61h-31.2c-30.7 0-40.3 19.1-40.3 38.7V184h68.5l-11 72h-57.5v168c118.2-14.2
+      209-116.5 209-240z"/>
+    </svg>
+    Partager sur Facebook
+  </a>
+
   <div class="counters">
     Écoute : <span class="listenCount">${music.listenCount || 0}</span> fois —
     Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
   </div>
-`; 
+`;
 ul.appendChild(li);
 
       });
