@@ -599,7 +599,60 @@ app.get("/share/:id", async (req, res) => {
 
 app.get("/music/:id", async (req, res) => {
   const music = await Music.findById(req.params.id);
-  if (!music) return res.status(404).send("Musique introuvable");
+  if (!music || !music.cover || !music.path) {
+    return res.status(404).send("Musique introuvable ou incomplète");
+  }
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8" />
+      <title>${music.title} - MoziKa</title>
+
+      <!-- Balises Open Graph pour le partage réseau -->
+      <meta property="og:title" content="🎶 ${music.title} - MoziKa" />
+      <meta property="og:description" content="Catégorie : ${music.category}" />
+      <meta property="og:image" content="${music.cover}" />
+      <meta property="og:url" content="https://mozika-gasy.onrender.com/music/${music._id}" />
+      <meta property="og:type" content="music.song" />
+
+      <style>
+        body {
+          font-family: sans-serif;
+          text-align: center;
+          padding: 40px;
+          background: #f0f2f5;
+          color: #333;
+        }
+        h1 { margin-bottom: 10px; }
+        audio { margin: 20px auto; display: block; }
+        img {
+          width: 240px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .meta {
+          margin-top: 10px;
+          font-size: 0.95rem;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>${music.title}</h1>
+      <img src="${music.cover}" alt="Couverture" />
+      <audio controls src="${music.path}"></audio>
+      <div class="meta">
+        Catégorie : ${music.category} <br>
+        Écoute : ${music.listenCount || 0} fois <br>
+        Téléchargement : ${music.downloadCount || 0} fois
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 
   // Tu peux envoyer une page HTML statique ou un rendu avec EJS, Handlebars, etc.
   res.send(`
