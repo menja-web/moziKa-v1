@@ -338,28 +338,39 @@
       attachShareHandlers();
     }
 
-    function attachAudioHandlers() {
-      const audios = document.querySelectorAll('audio[data-id]');
-      audios.forEach(audio => {
-        let timer;
-        audio.addEventListener('play', () => {
-          audios.forEach(a => a!==audio && a.pause());
-          clearTimeout(timer);
-          timer = setTimeout(async () => {
-            const res = await fetch(`${baseUrl}/api/listen`, {
-              method:'POST', credentials:'include',
-              headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({ id: audio.dataset.id })
-            });
-            const d = await res.json();
-            if (d.status==='success') {
-              audio.closest('li').querySelector('.listenCount').textContent = d.count;
-            }
-          },15000);
+function attachAudioHandlers() {
+  const audios = Array.from(document.querySelectorAll('audio[data-id]'));
+  audios.forEach((audio, index) => {
+    let timer;
+    audio.addEventListener('play', () => {
+      // Pause les autres
+      audios.forEach(a => a !== audio && a.pause());
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const res = await fetch(`${baseUrl}/api/listen`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: audio.dataset.id })
         });
-        ['pause','ended'].forEach(evt => audio.addEventListener(evt,()=>clearTimeout(timer)));
-      });
-    }
+        const data = await res.json();
+        if (data.status === 'success') {
+          audio.closest('li').querySelector('.listenCount').textContent = data.count;
+        }
+      }, 15000);
+    });
+
+    audio.addEventListener('pause', () => clearTimeout(timer));
+
+    audio.addEventListener('ended', () => {
+      clearTimeout(timer);
+      const nextAudio = audios[index + 1];
+      if (nextAudio) {
+        nextAudio.play();
+      }
+    });
+  });
+}
 
     function attachDownloadHandlers() {
       document.querySelectorAll('.download-link').forEach(a => {
@@ -403,6 +414,7 @@
       });
     }
 
+    
     function attachShareHandlers() {
       document.querySelectorAll('.copyBtn').forEach(btn => {
         btn.addEventListener('click', async () => {
