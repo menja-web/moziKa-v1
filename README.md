@@ -26,8 +26,9 @@ Développée avec passion par **Menjaniaina**, MoziKa vise à offrir une expéri
 ## 🛠️ Installation locale
 
 ```bash
-git clone https://github.com/menja-web/moziKa-v1.git
-cd moziKa-v1
+git clone https://github.com/menja-web/MOzika-apk.git
+cd MOzika-apk
 npm install
 node server.js
+"# MOzika-apk" 
 "# MOzika-apk" 
