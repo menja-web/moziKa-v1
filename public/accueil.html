@@ -257,7 +257,29 @@
 .music-card button {
   margin: 0.5rem 0;
 }
+/* Copier le style de ton bouton Favoris */
+.download-link {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  margin: 0.5rem 0;        /* espace vertical comme les autres */
+  background-color: #007bff;/* même bleu que tes .favBtn */
+  color: white;            /* texte clair */
+  border: none;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: bold;
+}
 
+.download-link:hover {
+  background-color: #0069d9;
+}
+
+/* espace général entre actions */
+.music-card a,
+.music-card button {
+  margin: 0.5rem 0;
+}
   </style>
   <meta property="og:title" content="MoziKa - Écoute & Partage de musique gasy" />
 <meta property="og:description" content="Découvre les meilleurs sons gasy sur MoziKa 🎧" />
@@ -487,28 +509,27 @@ function attachDownloadHandlers() {
       const id   = link.dataset.id;
       const card = link.closest('.music-card');
 
-      // unique count
+      // 1) unique count par user
       try {
-        const res  = await fetch(`${baseUrl}/api/download`, {
+        const res = await fetch(`${baseUrl}/api/download`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id })
         });
-        const d = await res.json();
-        if (d.status === 'success') {
-          card.querySelector('.downloadCount').textContent = d.count;
+        const data = await res.json();
+        if (data.status === 'success') {
+          card.querySelector('.downloadCount').textContent = data.count;
         }
-      } catch {
-        console.warn('Téléchargement : échec comptage');
+      } catch (err) {
+        console.warn('Téléchargement : échec comptage', err);
       }
 
-      // puis redirection vers le fichier + incrément global
+      // 2) redirection vraie vers le fichier + incrémente global
       window.location.href = `${baseUrl}/download/${id}`;
     });
   });
 }
-
 
   // 7) Gestion des favoris
   function attachFavoriteHandlers() {
