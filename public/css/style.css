@@ -296,25 +296,28 @@ audio::-webkit-media-controls-enclosure {
 audio::-webkit-media-controls-panel {
   width: calc(100% + 30px); /* étend le panneau pour éviter le décalage */
 }
-.hidden {
-  display: none;
+.shareBtn {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-weight: bold;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background-color 0.3s ease;
+  display: inline-block;
+}
+.shareBtn:hover {
+  background-color: #357abd;
 }
 .shareMessage {
   margin-left: 8px;
   font-weight: bold;
   color: green;
 }
-.fbShareBtn {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 6px 12px;
-  background-color: #4267B2;
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  font-weight: bold;
-}
-.fbShareBtn:hover {
-  background-color: #365899;
+.hidden {
+  display: none;
 }
 
