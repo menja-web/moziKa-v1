@@ -1,5 +1,4 @@
 // server.js
-
 require('dotenv').config();
 
 const express    = require('express');
@@ -19,37 +18,41 @@ const Music = require('./models/Music');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+app.use(express.static(path.join(__dirname, "public")));
 
-// ─── STATIC & BODY PARSING ─────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── BODY PARSING & STATIC FILES ─────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── CORS & SESSION CONFIG ─────────────────────────────
+// ─── CORS & SESSION CONFIG ───────────────────────────────
 const isProd       = process.env.NODE_ENV === 'production';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://mozika-gasy.onrender.com';
 
-app.set('trust proxy', 1);
+app.set('trust proxy', 1); // nécessaire pour secure cookies sur Render
+
 app.use(cors({
-  origin:          FRONTEND_URL,
-  credentials:     true,
-  methods:         ['GET','POST','OPTIONS'],
-  allowedHeaders:  ['Content-Type']
+  origin:      FRONTEND_URL,
+  credentials: true,
+  methods:     ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
 }));
+
 app.use(session({
-  secret:            process.env.SESSION_SECRET,
-  resave:            false,
+  secret: process.env.SESSION_SECRET,
+  resave: false,
   saveUninitialized: false,
-  store:             MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
-    maxAge:    24 * 60 * 60 * 1000,
-    httpOnly:  true,
-    secure:    isProd,
-    sameSite:  'none'
+    maxAge:   24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure:   isProd,     // true en prod (HTTPS)
+    sameSite: 'none'      // pour permettre cross‐site
   }
 }));
 
-// ─── AUTHENTICATION MIDDLEWARE ─────────────────────────
+// ─── AUTH MIDDLEWARE ──────────────────────────────────────
 function requireLogin(req, res, next) {
   if (!req.session || !req.session.userId) {
     return res.status(403).json({ status:'error', message:'Non connecté.' });
@@ -57,13 +60,13 @@ function requireLogin(req, res, next) {
   next();
 }
 
-// ─── MONGODB CONNECTION ─────────────────────────────────
+// ─── MONGODB CONNECTION ───────────────────────────────────
 mongoose.set('bufferCommands', false);
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ Erreur MongoDB :', err));
 
-// ─── UPLOAD DIRECTORIES ─────────────────────────────────
+// ─── UPLOAD DIRECTORIES ───────────────────────────────────
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 const facesDir  = path.join(__dirname, 'public', 'faces');
 [uploadDir, facesDir].forEach(dir => {
@@ -72,20 +75,21 @@ const facesDir  = path.join(__dirname, 'public', 'faces');
 app.use('/uploads', express.static(uploadDir));
 app.use('/faces',   express.static(facesDir));
 
-// ─── CLOUDINARY STORAGE ────────────────────────────────
+// ─── CLOUDINARY STORAGE ───────────────────────────────────
 const cloudinary = require('./config/cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder:          'mozikafiles',
-    resource_type:   'auto',
+    folder: 'mozikafiles',
+    resource_type: 'auto',
     allowed_formats: ['jpg','png','jpeg','mp3','wav']
   }
 });
 const upload = multer({ storage });
 
-// ─── AUTHENTICATION ROUTES ──────────────────────────────
+
+// ─── AUTHENTIFICATION ROUTES ──────────────────────────────
 
 // 1) Envoi du code de vérification
 app.post('/api/send-code', async (req, res) => {
@@ -133,10 +137,17 @@ app.post('/api/register', async (req, res) => {
     password: hash,
     joinedAt: new Date()
   });
-  req.session.user   = { id: u._1d.toString(), username: u.username, email: u.email };
-  req.session.userId = u._id.toString();
+
+  // Stockage de la session
+  req.session.user   = {
+    id:       u._id.toString(),
+    username: u.username,
+    email:    u.email
+  };
+  req.session.userId = u._id.toString();  // ← champ essentiel pour les routes
   delete req.session.pendingUser;
   delete req.session.verificationCode;
+
   res.json({ status:'success', message:'Inscription réussie !' });
 });
 
@@ -147,8 +158,15 @@ app.post('/api/login', async (req, res) => {
   if (!u || !(await bcrypt.compare(password, u.password))) {
     return res.status(401).json({ status:'error', message:'Identifiants invalides.' });
   }
-  req.session.user   = { id: u._id.toString(), username: u.username, email: u.email };
-  req.session.userId = u._id.toString();
+
+  // Stockage de la session
+  req.session.user   = {
+    id:       u._id.toString(),
+    username: u.username,
+    email:    u.email
+  };
+  req.session.userId = u._id.toString();  // ← champ essentiel
+
   res.json({ status:'success', username: u.username, email: u.email });
 });
 
@@ -163,8 +181,9 @@ app.post('/api/logout', (req, res) => {
 // 5) Session & infos utilisateur
 app.get('/api/get-session', (req, res) => {
   if (!req.session.userId) {
-    return res.status(401).json({ status:'error', message:'Non connecté.' });
-  }
+  return res.status(401).json({ status:'error', message:'Non connecté.' });
+}
+
   res.json({ status:'success', user: req.session.user });
 });
 app.get('/api/user-info', requireLogin, (req, res) => {
@@ -175,33 +194,34 @@ app.get('/api/user-info', requireLogin, (req, res) => {
   });
 });
 
-// ─── MUSIC ROUTES ──────────────────────────────────────
+
+// ─── MUSIQUES ROUTES ──────────────────────────────────────
 
 // GET toutes les musiques
 app.get('/api/musics', async (_req, res) => {
   const docs = await Music.find()
-    .populate('uploader','username email')
+    .populate('uploader', 'username email')
     .lean();
   const musics = docs.map(m => ({
-    _id:           m._id,
-    title:         m.title,
-    category:      m.category,
-    uploader:      m.uploader?.username || 'Anonyme',
-    listenCount:   m.listenCount  ?? 0,
-    downloadCount: m.downloadCount?? 0,
-    uploadedAt:    m.uploadedAt,
-    path:          m.externalUrl      || m.path,
-    cover:         m.externalCoverUrl || m.cover
+    _id:          m._id,
+    title:        m.title,
+    category:     m.category,
+    uploader:     m.uploader?.username || 'Anonyme',
+    listenCount:  m.listenCount  ?? 0,
+    downloadCount:m.downloadCount?? 0,
+    uploadedAt:   m.uploadedAt,
+    path:         m.externalUrl      || m.path,
+    cover:        m.externalCoverUrl || m.cover
   }));
   res.json({ status:'success', musics });
 });
 
-// GET musiques uploadées par l'utilisateur
+// GET musiques uploadées par l'utilisateur connecté
 app.get('/api/musics-by-user', requireLogin, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const docs   = await Music.find({ uploader: userId })
-      .populate('uploader','username')
+    const docs = await Music.find({ uploader: userId })
+      .populate('uploader', 'username')
       .lean();
     const musics = docs.map(m => ({
       _id:      m._id,
@@ -217,8 +237,9 @@ app.get('/api/musics-by-user', requireLogin, async (req, res) => {
   }
 });
 
-// UPLOAD MUSIQUE + COVER
-app.post('/api/upload',
+// UPLOAD MUSIQUE + COVER (via Cloudinary)
+app.post(
+  '/api/upload',
   upload.fields([
     { name: 'musicFile', maxCount: 1 },
     { name: 'coverFile', maxCount: 1 }
@@ -233,6 +254,7 @@ app.post('/api/upload',
           message:'Fichier audio et image requis.'
         });
       }
+
       const { title, category } = req.body;
       if (!title || !category) {
         return res.status(400).json({
@@ -240,15 +262,26 @@ app.post('/api/upload',
           message:'Titre et catégorie obligatoires.'
         });
       }
+
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(403).json({
+          status:'error',
+          message:'Utilisateur non connecté.'
+        });
+      }
+
       const music = await Music.create({
-        title, category,
-        uploader:      req.session.userId,
-        path:          musicFile.path,
-        cover:         coverFile.path,
-        listenCount:   0,
-        downloadCount: 0,
-        uploadedAt:    new Date()
+        title,
+        category,
+        uploader:     userId,
+        path:         musicFile.path,
+        cover:        coverFile.path,
+        listenCount:  0,
+        downloadCount:0,
+        uploadedAt:   new Date()
       });
+
       res.json({ status:'success', music });
     } catch (err) {
       console.error('❌ Upload error:', err);
@@ -260,36 +293,52 @@ app.post('/api/upload',
   }
 );
 
-// DELETE une musique (route renommée pour correspondre au frontend)
-app.post('/api/delete', requireLogin, async (req, res) => {
+// DELETE une musique
+app.post('/api/music/delete', requireLogin, async (req, res) => {
   const { id } = req.body;
+
   try {
     const music = await Music.findById(id);
     if (!music || music.uploader.toString() !== req.session.userId) {
-      return res.status(404).json({ status:'error', message:'Non autorisé ou introuvable.' });
+      return res.status(404).json({
+        status: 'error',
+        message: 'Non autorisé ou introuvable.'
+      });
     }
+
+    // Supprimer les fichiers associés (si stockés dans /uploads)
     if (music.path?.startsWith('/uploads')) {
       fs.unlinkSync(path.join(__dirname, 'public', music.path));
     }
     if (music.cover?.startsWith('/uploads')) {
       fs.unlinkSync(path.join(__dirname, 'public', music.cover));
     }
+
     await Music.findByIdAndDelete(id);
-    res.json({ status:'success', message:'Musique supprimée.' });
+    res.json({ status: 'success', message: 'Musique supprimée.' });
+
   } catch (err) {
     console.error('Erreur suppression musique :', err);
-    res.status(500).json({ status:'error', message:'Erreur serveur pendant la suppression.' });
+    res.status(500).json({
+      status: 'error',
+      message: 'Erreur serveur pendant la suppression.'
+    });
   }
 });
+
 
 // ADD musique par URL externe
 app.post('/api/add-music-url', requireLogin, async (req, res) => {
   const { title, category, url, coverUrl } = req.body;
   if (!title || !category || !url || !coverUrl) {
-    return res.status(400).json({ status:'error', message:'Champs manquants.' });
+    return res.status(400).json({
+      status:'error',
+      message:'Champs manquants.'
+    });
   }
   const music = await Music.create({
-    title, category,
+    title,
+    category,
     uploader:         req.session.userId,
     externalUrl:      url,
     externalCoverUrl: coverUrl,
@@ -300,28 +349,39 @@ app.post('/api/add-music-url', requireLogin, async (req, res) => {
   res.json({ status:'success', music });
 });
 
-// ─── FAVORIS ROUTES ───────────────────────────────────────
 
-// Ajouter un favori
+// ─── FAVORIS ROUTES ────────────────────────────────────────
+
+// Ajout d'un favori
 app.post('/api/add-favorite', requireLogin, async (req, res) => {
   const musicId = req.body.id;
+  console.log('👉 userId session =', req.session.userId);
+
   if (!musicId) {
-    return res.status(400).json({ status:'error', message:'ID de la musique manquant.' });
+    return res.status(400).json({
+      status: 'error',
+      message: 'ID de la musique manquant.'
+    });
   }
+
   try {
     const user = await User.findById(req.session.userId);
     if (!user.favorites.includes(musicId)) {
       user.favorites.push(musicId);
       await user.save();
     }
-    res.json({ status:'success' });
+    res.json({ status: 'success' });
   } catch (err) {
     console.error('Erreur ajout favoris :', err);
-    res.status(500).json({ status:'error', message:'Erreur serveur', error: err.message });
+    res.status(500).json({
+      status: 'error',
+      message:'Erreur serveur',
+      error: err.message
+    });
   }
 });
 
-// Retirer un favori
+// Suppression d'un favori
 app.post('/api/remove-favorite', requireLogin, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.session.userId, {
@@ -329,8 +389,11 @@ app.post('/api/remove-favorite', requireLogin, async (req, res) => {
     });
     res.json({ status:'success' });
   } catch (err) {
-    console.error('Erreur suppression favoris :', err);
-    res.json({ status:'error', message:'Erreur suppression favoris', error: err.message });
+    res.json({
+      status:'error',
+      message:'Erreur suppression favoris',
+      error: err.message
+    });
   }
 });
 
@@ -340,6 +403,7 @@ app.get('/api/favorites', requireLogin, async (req, res) => {
     const user = await User.findById(req.session.userId)
       .populate({ path:'favorites', populate:{ path:'uploader', select:'username' } })
       .lean();
+
     const favs = (user.favorites || []).map(m => ({
       _id:           m._id,
       title:         m.title,
@@ -350,16 +414,21 @@ app.get('/api/favorites', requireLogin, async (req, res) => {
       listenCount:   m.listenCount      ?? 0,
       downloadCount: m.downloadCount    ?? 0
     }));
+
     res.json({ status:'success', favorites: favs });
   } catch (err) {
-    console.error('Erreur /api/favorites :', err);
-    res.json({ status:'error', message:'Erreur serveur', error: err.message });
+    res.json({
+      status:'error',
+      message:'Erreur serveur',
+      error: err.message
+    });
   }
 });
 
+
 // ─── STATS UNIQUES ─────────────────────────────────────────
 
-// Écoutes uniques
+// Incrémentation des écoutes uniques
 app.post('/api/listen', requireLogin, async (req, res) => {
   const { id } = req.body;
   const m = await Music.findOneAndUpdate(
@@ -368,13 +437,14 @@ app.post('/api/listen', requireLogin, async (req, res) => {
     { new: true }
   );
   if (m) return res.json({ status:'success', count: m.listenCount });
+
   const existing = await Music.findById(id);
   return existing
     ? res.json({ status:'success', count: existing.listenCount })
     : res.status(404).json({ status:'error', message:'Musique introuvable.' });
 });
 
-// Téléchargements uniques via API
+// Incrémentation des téléchargements uniques
 app.post('/api/download', requireLogin, async (req, res) => {
   const { id } = req.body;
   const m = await Music.findOneAndUpdate(
@@ -383,32 +453,40 @@ app.post('/api/download', requireLogin, async (req, res) => {
     { new: true }
   );
   if (m) return res.json({ status:'success', count: m.downloadCount });
+
   const existing = await Music.findById(id);
   return existing
     ? res.json({ status:'success', count: existing.downloadCount })
     : res.status(404).json({ status:'error', message:'Musique introuvable.' });
 });
 
+
 // ─── TOP 5 MUSIQUES ────────────────────────────────────────
 app.get('/api/top', async (_req, res) => {
   const docs = await Music.find().sort({ listenCount:-1 }).limit(5)
     .populate('uploader','username').lean();
-  const top = docs.map(m => ({
-    _id:           m._id,
-    title:         m.title,
-    path:          m.externalUrl || m.path,
-    cover:         m.externalCoverUrl || m.cover,
-    listenCount:   m.listenCount,
-    uploader:      m.uploader?.username || 'Anonyme',
-    downloadCount: m.downloadCount ?? 0
-  }));
+
+const top = docs.map(m => ({
+  _id:          m._id,
+  title:        m.title,
+  path:         m.externalUrl || m.path,
+  cover:         m.externalCoverUrl || m.cover,  // ✅ IMAGE FIX // ✅ ce champ doit exister
+  listenCount:  m.listenCount,
+  uploader:     m.uploader?.username || 'Anonyme',
+  downloadCount: m.downloadCount ?? 0  // ✅ CORRECT ici
+}));
+
+
   res.json({ status:'success', top });
 });
+
+
 
 // ─── PASSWORD RESET ────────────────────────────────────────
 const resetFile = path.join(__dirname, 'resetTokens.json');
 if (!fs.existsSync(resetFile)) fs.writeFileSync(resetFile, '[]');
 
+// Demande de réinitialisation
 app.post('/api/reset-request', async (req, res) => {
   const { email } = req.body;
   const u = await User.findOne({ email: email.toLowerCase() });
@@ -442,17 +520,24 @@ app.post('/api/reset-request', async (req, res) => {
   }
 });
 
+// Application du nouveau mot de passe
 app.post('/api/password/update', requireLogin, async (req, res) => {
   const { oldPass, newPass } = req.body;
   const user = await User.findById(req.session.userId);
+
   const match = await bcrypt.compare(oldPass, user.password);
   if (!match) {
     return res.json({ status: 'error', message: 'Ancien mot de passe incorrect.' });
   }
-  user.password = await bcrypt.hash(newPass, 10);
+
+  const hashed = await bcrypt.hash(newPass, 10);
+  user.password = hashed;
   await user.save();
+
   res.json({ status: 'success', message: 'Mot de passe mis à jour.' });
 });
+
+
 
 // ─── PROFILE PHOTOS & CREATORS ────────────────────────────
 const creatorsFile = path.join(__dirname, 'data', 'createurs.json');
@@ -462,8 +547,10 @@ if (!fs.existsSync(path.dirname(creatorsFile))) {
 if (!fs.existsSync(creatorsFile)) {
   fs.writeFileSync(creatorsFile, '[]');
 }
+
 const photoUpload = multer({ dest: facesDir });
 
+// Upload / mise à jour de la photo de profil
 app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   const { username } = req.body;
   if (!username || !req.file) {
@@ -483,15 +570,16 @@ app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   res.json({ success:true, photo:`/faces/${newName}` });
 });
 
+// Lister les créateurs (pour stats ou affichage)
 app.get('/api/creators', (_req, res) => {
   const data = JSON.parse(fs.readFileSync(creatorsFile));
   res.json({ status:'success', creators: data });
 });
 
-// ─── PARTAGE / PUBLIC ROUTES ────────────────────────────
-app.get('/share/:id', async (req, res) => {
+// partage link
+app.get("/share/:id", async (req, res) => {
   const music = await Music.findById(req.params.id);
-  if (!music) return res.status(404).send('Not found');
+  if (!music) return res.status(404).send("Not found");
 
   res.send(`
     <!DOCTYPE html>
@@ -500,7 +588,7 @@ app.get('/share/:id', async (req, res) => {
       <meta property="og:title" content="🎧 ${music.title} sur MoziKa" />
       <meta property="og:description" content="Catégorie : ${music.category}" />
       <meta property="og:image" content="${music.cover}" />
-      <meta property="og:url" content="${FRONTEND_URL}/share/${music._id}" />
+      <meta property="og:url" content="https://mozika-gasy.onrender.com/share/${music._id}" />
       <meta property="og:type" content="music.song" />
     </head>
     <body>Redirection vers MoziKa…</body>
@@ -509,25 +597,46 @@ app.get('/share/:id', async (req, res) => {
   `);
 });
 
-app.get('/music/:id', async (req, res) => {
+app.get("/music/:id", async (req, res) => {
   const music = await Music.findById(req.params.id);
   if (!music || !music.cover || !music.path) {
-    return res.status(404).send('Musique introuvable ou incomplète');
+    return res.status(404).send("Musique introuvable ou incomplète");
   }
+
   res.send(`
     <!DOCTYPE html>
     <html lang="fr">
     <head>
       <meta charset="UTF-8" />
       <title>${music.title} - MoziKa</title>
-      <meta property="og:title"       content="🎶 ${music.title} - MoziKa" />
+
+      <!-- Balises Open Graph pour le partage réseau -->
+      <meta property="og:title" content="🎶 ${music.title} - MoziKa" />
       <meta property="og:description" content="Catégorie : ${music.category}" />
-      <meta property="og:image"       content="${music.cover}" />
-      <meta property="og:url"         content="${FRONTEND_URL}/music/${music._id}" />
-      <meta property="og:type"        content="music.song" />
-      <style>body{font-family:sans-serif;text-align:center;padding:40px;background:#f0f2f5;color:#333;}
-        h1{margin-bottom:10px;}audio{margin:20px auto;display:block;}img{width:240px;border-radius:10px;
-        box-shadow:0 2px 10px rgba(0,0,0,0.2);} .meta{margin-top:10px;font-size:.95rem;color:#666;}
+      <meta property="og:image" content="${music.cover}" />
+      <meta property="og:url" content="https://mozika-gasy.onrender.com/music/${music._id}" />
+      <meta property="og:type" content="music.song" />
+
+      <style>
+        body {
+          font-family: sans-serif;
+          text-align: center;
+          padding: 40px;
+          background: #f0f2f5;
+          color: #333;
+        }
+        h1 { margin-bottom: 10px; }
+        audio { margin: 20px auto; display: block; }
+        img {
+          width: 240px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .meta {
+          margin-top: 10px;
+          font-size: 0.95rem;
+          color: #666;
+        }
       </style>
     </head>
     <body>
@@ -536,25 +645,29 @@ app.get('/music/:id', async (req, res) => {
       <audio controls src="${music.path}"></audio>
       <div class="meta">
         Catégorie : ${music.category} <br>
-        Écoutes : ${music.listenCount || 0} fois <br>
-        Téléchargements : ${music.downloadCount || 0} fois
+        Écoute : ${music.listenCount || 0} fois <br>
+        Téléchargement : ${music.downloadCount || 0} fois
       </div>
     </body>
     </html>
   `);
 });
 
-// Téléchargement direct (+ comptage simple)
-app.get('/download/:id', async (req, res) => {
-  const music = await Music.findById(req.params.id);
-  if (!music) return res.status(404).send('Fichier introuvable');
 
+// ─── EXPORT & PING & HOME ─────────────────────────────────
+app.get("/download/:id", async (req, res) => {
+  const music = await Music.findById(req.params.id);
+  if (!music) return res.status(404).send("Fichier introuvable");
+
+  // 🔢 Incrémente le compteur dans MongoDB
   music.downloadCount = (music.downloadCount || 0) + 1;
   await music.save();
+
+  // 🔁 Redirection vers le fichier
   res.redirect(music.path);
 });
 
-// ─── DATA EXPORT, PING & HOME ────────────────────────────
+// Exporter toute la data (users, musics, tokens, creators)
 app.get('/api/export-data', async (_req, res) => {
   const users    = await User.find().select('-password').lean();
   const musics   = await Music.find().populate('uploader','username email').lean();
@@ -562,7 +675,11 @@ app.get('/api/export-data', async (_req, res) => {
   const creators = JSON.parse(fs.readFileSync(creatorsFile));
   res.json({ status:'success', users, musics, tokens, creators });
 });
+
+// Ping simple
 app.get('/api/ping', (_req, res) => res.json({ pong:true }));
+
+// Page d'accueil statique
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
