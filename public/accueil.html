@@ -223,7 +223,7 @@
         margin: 10px 0;
       }
     }
-    .fbShareBtn {
+.fbShareBtn {
   display: inline-block;
   margin-top: 6px;
   padding: 6px 12px;
@@ -236,14 +236,7 @@
 .fbShareBtn:hover {
   background-color: #365899;
 }
-.hidden {
-  display: none;
-}
-.shareMessage {
-  margin-left: 8px;
-  font-weight: bold;
-  color: green;
-}
+
   </style>
 </head>
 <body>
@@ -265,8 +258,6 @@
     <ul id="userMusics"></ul>
     <ul id="userFavorites"></ul>
   </main>
-  <a href="https://facebook.com" class="fbShareBtn" target="_blank">📘 Test Facebook</a>
-
   <div id="topFixed">
     <section>
       <h3>🏆 Top 5 des musiques les plus écoutées</h3>
@@ -348,25 +339,32 @@
         const isFav = favoritesSet.has(music._id);
         const li = document.createElement("li");
 
-        li.innerHTML = `
-          <img class="cover" src="${music.cover}" alt="Couverture" />
-          <strong>${music.title}</strong>
-          <small>Par ${music.uploader || 'Anonyme'}</small>
-          <div class="meta">
-            🎵 ${music.category} • 📅 ${music.uploadedAt?.split("T")[0]}
-          </div>
-          <audio controls controlsList="nodownload" data-id="${music._id}" src="${music.path}"></audio>
-          <a class="download-link" data-id="${music._id}" href="${music.path}" download>Télécharger</a>
-          <button class="favBtn" data-id="${music._id}">
-            ${isFav ? '❤️ Supprimé' : '🤍 Ajouter aux favoris'}
-          </button>
-          <div class="counters">
-            Écoute : <span class="listenCount">${music.listenCount||0}</span> fois —
-            Téléchargement : <span class="downloadCount">${music.downloadCount||0}</span> fois
-          </div>
-        `;
-        ul.appendChild(li);
-      });
+<li.innerHTML = `
+  <img class="cover" src="${music.cover}" alt="Couverture" />
+  <strong>${music.title}</strong>
+  <small>Par ${music.uploader || 'Anonyme'}</small>
+  <div class="meta">
+    🎵 ${music.category} • 📅 ${music.uploadedAt?.split("T")[0]}
+  </div>
+  <audio controls controlsList="nodownload" data-id="${music._id}" src="${music.path}"></audio>
+  <a class="download-link" data-id="${music._id}" href="${music.path}" download>Télécharger</a>
+  <button class="favBtn" data-id="${music._id}">
+    ${isFav ? '❤️ Supprimé' : '🤍 Ajouter aux favoris'}
+  </button>
+  
+  <!-- 🔗 Partage -->
+  <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
+  <span class="shareMessage hidden">📋 Lien copié !</span><br>
+  <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}" 
+     target="_blank" class="fbShareBtn">📘 Partager sur Facebook</a>
+  
+  <div class="counters">
+    Écoute : <span class="listenCount">${music.listenCount || 0}</span> fois —
+    Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
+  </div>
+`; 
+ul.appendChild(li);
+
 
       attachAudioHandlers();
       attachDownloadHandlers();
