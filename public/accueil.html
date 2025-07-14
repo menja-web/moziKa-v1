@@ -25,14 +25,10 @@
       margin-bottom: 10px;
     }
     nav {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
+      display: flex; gap: 20px; flex-wrap: wrap;
     }
     nav a {
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
+      color: white; text-decoration: none; font-weight: 600;
       transition: color 0.3s ease;
     }
     nav a:hover { color: #cce4ff; }
@@ -108,7 +104,7 @@
       margin-bottom: 10px;
     }
 
-    /* boutons actions – disposition verticale, margin-top = 6px */
+    /* actions – disposition verticale, margin-top = 6px */
     a.download-link,
     button.favBtn,
     button.copyBtn,
@@ -145,6 +141,7 @@
       font-size: 0.9rem;
       font-weight: bold;
       color: green;
+      text-align: center;
     }
 
     .counters {
@@ -156,91 +153,64 @@
 
     /* Top fixed */
     #topFixed {
-      position: fixed;
-      bottom: 0; left: 0; width: 100%;
-      background: #f7f9fc;
-      border-top: 1px solid #ccc;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: #f7f9fc; border-top: 1px solid #ccc;
       padding: 10px 20px;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 999;
     }
     #topFixed h3 {
-      margin-bottom: 8px;
-      font-size: 1rem;
-      color: #4a90e2;
+      margin-bottom: 8px; font-size: 1rem; color: #4a90e2;
     }
     #topFixed ul {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
-      padding: 0;
-      list-style: none;
-      font-size: 0.9rem;
-      margin-bottom: 8px;
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 15px; padding: 0; list-style: none;
+      font-size: 0.9rem; margin-bottom: 8px;
     }
     #topFixed ul li {
-      background: white;
-      padding: 6px 10px;
-      border-radius: 6px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: white; padding: 6px 10px;
+      border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     #topFixed a {
-      background: #4a90e2;
-      color: white;
-      padding: 8px 14px;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: bold;
+      background: #4a90e2; color: white;
+      padding: 8px 14px; text-decoration: none;
+      border-radius: 6px; font-weight: bold;
     }
     #topFixed a:hover {
       background: #357abd;
     }
 
     footer {
-      background: #121212;
-      color: #ddd;
-      padding: 30px 20px 15px;
-      font-size: 0.95rem;
+      background: #121212; color: #ddd;
+      padding: 30px 20px 15px; font-size: 0.95rem;
     }
     .footer-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 30px;
-      max-width: 1000px;
-      margin: 0 auto;
+      display: flex; flex-wrap: wrap;
+      justify-content: space-between; gap: 30px;
+      max-width: 1000px; margin: 0 auto;
     }
     .footer-item {
-      flex: 1;
-      min-width: 220px;
+      flex: 1; min-width: 220px;
     }
     .footer-item h4 {
-      font-size: 1.1rem;
-      color: #4a90e2;
+      font-size: 1.1rem; color: #4a90e2;
       margin-bottom: 10px;
     }
     .footer-item p {
-      margin: 6px 0;
-      line-height: 1.4;
+      margin: 6px 0; line-height: 1.4;
     }
     .footer-item span {
-      font-weight: bold;
-      margin-right: 6px;
+      font-weight: bold; margin-right: 6px;
     }
     .footer-item a {
-      color: #bbb;
-      text-decoration: none;
+      color: #bbb; text-decoration: none;
     }
     .footer-item a:hover {
-      color: #4a90e2;
-      text-decoration: underline;
+      color: #4a90e2; text-decoration: underline;
     }
     .footer-bottom {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 0.85rem;
-      color: #888;
+      text-align: center; margin-top: 30px;
+      font-size: 0.85rem; color: #888;
     }
   </style>
 </head>
@@ -260,9 +230,7 @@
     <div id="searchBar">
       <input type="text" id="searchInput" placeholder="🔍 Rechercher par titre..." />
     </div>
-    <ul id="musicList">
-      <li>Chargement...</li>
-    </ul>
+    <ul id="musicList"><li>Chargement…</li></ul>
     <ul id="userMusics"></ul>
     <ul id="userFavorites"></ul>
   </main>
@@ -305,203 +273,172 @@
     let allMusics = [];
     let favoritesSet = new Set();
 
-    // 1) Récupérer la session utilisateur
     async function fetchSession() {
       try {
-        const res = await fetch(`${baseUrl}/api/get-session`, {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const { user } = await res.json();
-          currentUser = user;
-        }
+        const res = await fetch(`${baseUrl}/api/get-session`, { credentials: 'include' });
+        if (res.ok) currentUser = (await res.json()).user;
       } catch {}
     }
 
-    // 2) Charger les favoris
     async function loadFavorites() {
       if (!currentUser) return;
       try {
-        const res = await fetch(`${baseUrl}/api/favorites`, {
-          credentials: 'include'
-        });
+        const res = await fetch(`${baseUrl}/api/favorites`, { credentials: 'include' });
         if (res.ok) {
-          const { favorites } = await res.json();
-          favoritesSet = new Set(favorites.map(m => m._id));
+          favoritesSet = new Set((await res.json()).favorites.map(m => m._id));
         }
       } catch {}
     }
 
-    // 3) Récupérer et trier les musiques
     async function fetchMusics() {
       try {
         const res = await fetch(`${baseUrl}/api/musics`);
         const { musics } = await res.json();
         allMusics = musics || [];
-        allMusics.sort((a, b) => (b.listenCount || 0) - (a.listenCount || 0));
+        allMusics.sort((a,b) => (b.listenCount||0) - (a.listenCount||0));
         renderMusics(allMusics);
       } catch {}
     }
 
-    // 4) Générer le HTML et attacher les events
     function renderMusics(list) {
-      const ul = document.getElementById("musicList");
-      ul.innerHTML = "";
-
-      list.forEach(music => {
-        const isFav = favoritesSet.has(music._id);
-        const li = document.createElement("li");
-
+      const ul = document.getElementById('musicList');
+      ul.innerHTML = '';
+      list.forEach(m => {
+        const isFav = favoritesSet.has(m._id);
+        const li = document.createElement('li');
         li.innerHTML = `
-          <img class="cover" src="${music.cover}" alt="Couverture" />
-          <strong>${music.title}</strong>
-          <small>Par ${music.uploader || 'Anonyme'}</small>
+          <img class="cover" src="${m.cover}" alt="Couverture" />
+          <strong>${m.title}</strong>
+          <small>Par ${m.uploader||'Anonyme'}</small>
           <div class="meta">
-            <span>🎵 ${music.category}</span>
-            <span>•</span>
-            <span>📅 ${music.uploadedAt?.split("T")[0]}</span>
+            <span>🎵 ${m.category}</span><span>•</span>
+            <span>📅 ${m.uploadedAt?.split('T')[0]||''}</span>
           </div>
-          <audio controls controlsList="nodownload" data-id="${music._id}" src="${music.path}"></audio>
-          <a class="download-link" data-id="${music._id}" href="${music.path}" download>📥 Télécharger</a>
-          <button class="favBtn" data-id="${music._id}">
-            ${isFav ? '❤️ Supprimé' : '🤍 Ajouter aux favoris'}
-          </button>
-          <button class="copyBtn" data-url="${baseUrl}/share/${music._id}">🔗 Copier le lien</button>
-          <button class="fbBtn" data-url="https://www.facebook.com/sharer/sharer.php?u=${baseUrl}/share/${music._id}">
-            🔵 Partager sur Facebook
-          </button>
+          <audio controls controlsList="nodownload" data-id="${m._id}" src="${m.path}"></audio>
+          <a class="download-link" data-id="${m._id}" href="${m.path}" download>📥 Télécharger</a>
+          <button class="favBtn" data-id="${m._id}">${isFav?'❤️ Supprimé':'🤍 Ajouter aux favoris'}</button>
+          <button class="copyBtn" data-url="${baseUrl}/share/${m._id}">🔗 Copier le lien</button>
           <span class="shareMessage">📋 Copié !</span>
+          <button class="fbBtn" data-url="https://www.facebook.com/sharer/sharer.php?u=${baseUrl}/share/${m._id}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
+              <path d="M22 12c0-5.522-4.477-10-10-10S2 6.478 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.99h-2.54v-2.89h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562v1.875h2.773l-.443 2.89h-2.33v6.99C18.343 21.128 22 16.991 22 12"/>
+            </svg>
+            Partager
+          </button>
           <div class="counters">
-            Écoute : <span class="listenCount">${music.listenCount||0}</span> fois —
-            Téléchargement : <span class="downloadCount">${music.downloadCount||0}</span> fois
+            Écoute : <span class="listenCount">${m.listenCount||0}</span> fois —
+            Téléchargement : <span class="downloadCount">${m.downloadCount||0}</span> fois
           </div>
         `;
         ul.appendChild(li);
       });
-
       attachAudioHandlers();
       attachDownloadHandlers();
       attachFavoriteHandlers();
       attachShareHandlers();
     }
 
-    // 5) Écoute après 15s
     function attachAudioHandlers() {
-      const audios = document.querySelectorAll("audio[data-id]");
+      const audios = document.querySelectorAll('audio[data-id]');
       audios.forEach(audio => {
         let timer;
-        audio.addEventListener("play", () => {
-          audios.forEach(a => a !== audio && a.pause());
+        audio.addEventListener('play', () => {
+          audios.forEach(a => a!==audio && a.pause());
           clearTimeout(timer);
           timer = setTimeout(async () => {
             const res = await fetch(`${baseUrl}/api/listen`, {
-              method: "POST",
-              credentials: 'include',
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: audio.dataset.id })
+              method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({ id: audio.dataset.id })
             });
-            const data = await res.json();
-            if (data.status === "success") {
-              audio.closest("li").querySelector(".listenCount").textContent = data.count;
+            const d = await res.json();
+            if (d.status==='success') {
+              audio.closest('li').querySelector('.listenCount').textContent = d.count;
             }
-          }, 15000);
+          },15000);
         });
-        audio.addEventListener("pause", () => clearTimeout(timer));
-        audio.addEventListener("ended", () => clearTimeout(timer));
+        ['pause','ended'].forEach(evt => audio.addEventListener(evt,()=>clearTimeout(timer)));
       });
     }
 
-    // 6) Téléchargement (sans unique par utilisateur)
     function attachDownloadHandlers() {
-      document.querySelectorAll(".download-link").forEach(a => {
-        a.addEventListener("click", async e => {
+      document.querySelectorAll('.download-link').forEach(a => {
+        a.addEventListener('click', async e => {
           e.preventDefault();
           const res = await fetch(`${baseUrl}/api/download`, {
-            method: "POST",
-            credentials: 'include',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: a.dataset.id })
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ id: a.dataset.id })
           });
-          const data = await res.json();
-          if (data.status === "success") {
-            a.closest("li").querySelector(".downloadCount").textContent = data.count;
+          const d = await res.json();
+          if (d.status==='success') {
+            a.closest('li').querySelector('.downloadCount').textContent = d.count;
           }
-          // lancer le téléchargement
-          const dl = document.createElement("a");
-          dl.href = a.href; dl.download = ""; dl.style.display = "none";
-          document.body.appendChild(dl);
-          dl.click();
-          dl.remove();
+          const dl = document.createElement('a');
+          dl.href = a.href; dl.download=''; dl.style.display='none';
+          document.body.appendChild(dl); dl.click(); dl.remove();
         });
       });
     }
 
-    // 7) Gestion des favoris
     function attachFavoriteHandlers() {
-      document.querySelectorAll(".favBtn").forEach(btn => {
-        btn.addEventListener("click", async () => {
+      document.querySelectorAll('.favBtn').forEach(btn => {
+        btn.addEventListener('click', async () => {
           const id = btn.dataset.id;
-          const action = favoritesSet.has(id) ? "remove-favorite" : "add-favorite";
+          const action = favoritesSet.has(id)?'remove-favorite':'add-favorite';
           const res = await fetch(`${baseUrl}/api/${action}`, {
-            method: "POST",
-            credentials: 'include',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id })
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ id })
           });
-          const data = await res.json();
-          if (data.status === "success") {
-            if (action === "add-favorite") {
-              favoritesSet.add(id);
-              btn.textContent = "❤️ Supprimé";
+          const d = await res.json();
+          if (d.status==='success') {
+            if (action==='add-favorite') {
+              favoritesSet.add(id); btn.textContent='❤️ Supprimé';
             } else {
-              favoritesSet.delete(id);
-              btn.textContent = "🤍 Ajouter aux favoris";
+              favoritesSet.delete(id); btn.textContent='🤍 Ajouter aux favoris';
             }
           }
         });
       });
     }
 
-    // 8) Copier & partager
     function attachShareHandlers() {
-      document.querySelectorAll(".copyBtn").forEach(btn => {
-        btn.addEventListener("click", async () => {
+      document.querySelectorAll('.copyBtn').forEach(btn => {
+        btn.addEventListener('click', async () => {
           await navigator.clipboard.writeText(btn.dataset.url);
-          const msg = btn.nextElementSibling;
-          msg.style.display = "block";
-          setTimeout(() => msg.style.display = "none", 2000);
+          const msg = btn.parentElement.querySelector('.shareMessage');
+          msg.style.display = 'block';
+          setTimeout(() => msg.style.display = 'none', 2000);
         });
       });
-      document.querySelectorAll(".fbBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          window.open(btn.dataset.url, "_blank");
+      document.querySelectorAll('.fbBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          window.open(btn.dataset.url, '_blank');
         });
       });
     }
 
-    // 9) Recherche
-    document.getElementById("searchInput").addEventListener("input", e => {
+    document.getElementById('searchInput').addEventListener('input', e => {
       const q = e.target.value.trim().toLowerCase();
       renderMusics(allMusics.filter(m => m.title.toLowerCase().includes(q)));
     });
 
-    // 10) Top 5
     fetch(`${baseUrl}/api/top`)
       .then(r => r.json())
       .then(data => {
-        const list = document.getElementById("topList");
-        list.innerHTML = data.top && data.top.length
-          ? data.top.map(m => `<li>${m.title} – ${m.listenCount||0} écoutes</li>`).join("")
-          : "<li>Aucun hit pour le moment.</li>";
+        const ul = document.getElementById('topList');
+        ul.innerHTML = data.top.length
+          ? data.top.map(m => `<li>${m.title} – ${m.listenCount||0} écoutes</li>`).join('')
+          : '<li>Aucun hit pour le moment.</li>';
       });
 
-    // démarrage
-    window.addEventListener("DOMContentLoaded", async () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       await fetchSession();
       await loadFavorites();
       await fetchMusics();
     });
   </script>
-
 </body>
 </html>
+```
