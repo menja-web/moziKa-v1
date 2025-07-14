@@ -244,6 +244,20 @@
   font-weight: bold;
   color: green;
 }
+/* 1. Couleur Bleu MoziKa pour “Télécharger” */
+.download-link {
+  color: #0d6efd;
+  text-decoration: none;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* 2. Un peu d’espace entre chaque action */
+.music-card a,
+.music-card button {
+  margin: 0.5rem 0;
+}
+
   </style>
   <meta property="og:title" content="MoziKa - Écoute & Partage de musique gasy" />
 <meta property="og:description" content="Découvre les meilleurs sons gasy sur MoziKa 🎧" />
@@ -425,59 +439,76 @@
     attachShareHandlers();
   }
 
-  // 5) Compteur d’écoute immédiat sur "play"
-  function attachAudioHandlers() {
-    document.addEventListener("play", async e => {
-      if (!e.target.classList.contains("music-audio")) return;
-      const audio = e.target;
-      const card = audio.closest(".music-card");
-      const id = audio.dataset.id;
+// 5) Compteur d’écoute après 15s, une seule fois par user
+function attachAudioHandlers() {
+  const timers = new WeakMap();
 
-      try {
-        const res = await fetch(`${baseUrl}/api/listen`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id })
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-          card.querySelector(".listenCount").textContent = data.count;
-        }
-      } catch (err) {
-        console.warn("Écoute : échec comptage", err);
-      }
-    }, true);
-  }
+  document.querySelectorAll('.music-audio').forEach(audio => {
+    audio.addEventListener('play', () => {
+      // pause les autres
+      document.querySelectorAll('.music-audio')
+        .forEach(a => a !== audio && a.pause());
 
-  // 6) Compteur et lancement du téléchargement
-  function attachDownloadHandlers() {
-    document.querySelectorAll(".download-link").forEach(link => {
-      link.addEventListener("click", async e => {
-        e.preventDefault();
-        const id = link.dataset.id;
-        const card = link.closest(".music-card");
+      // reset + relance timer
+      clearTimeout(timers.get(audio));
+      const timer = setTimeout(async () => {
+        const id   = audio.dataset.id;
+        const card = audio.closest('.music-card');
 
         try {
-          const res = await fetch(`${baseUrl}/api/download`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
+          const res  = await fetch(`${baseUrl}/api/listen`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id })
           });
-          const data = await res.json();
-          if (data.status === "success") {
-            card.querySelector(".downloadCount").textContent = data.count;
+          const d = await res.json();
+          if (d.status === 'success') {
+            card.querySelector('.listenCount').textContent = d.count;
           }
-        } catch (err) {
-          console.warn("Téléchargement : échec comptage", err);
+        } catch {
+          console.warn('Écoute : échec comptage');
         }
+      }, 15000);
 
-        // redirection vers la route qui sert le fichier et incrémente un compteur global
-        window.location.href = `${baseUrl}/download/${id}`;
-      });
+      timers.set(audio, timer);
     });
-  }
+
+    audio.addEventListener('pause', () => clearTimeout(timers.get(audio)));
+    audio.addEventListener('ended', () => clearTimeout(timers.get(audio)));
+  });
+}
+
+  // 6) Compteur et lancement du téléchargement
+function attachDownloadHandlers() {
+  document.querySelectorAll('.download-link').forEach(link => {
+    link.addEventListener('click', async e => {
+      e.preventDefault();
+      const id   = link.dataset.id;
+      const card = link.closest('.music-card');
+
+      // unique count
+      try {
+        const res  = await fetch(`${baseUrl}/api/download`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const d = await res.json();
+        if (d.status === 'success') {
+          card.querySelector('.downloadCount').textContent = d.count;
+        }
+      } catch {
+        console.warn('Téléchargement : échec comptage');
+      }
+
+      // puis redirection vers le fichier + incrément global
+      window.location.href = `${baseUrl}/download/${id}`;
+    });
+  });
+}
+
 
   // 7) Gestion des favoris
   function attachFavoriteHandlers() {
