@@ -129,6 +129,7 @@ document.addEventListener("click", async (e) => {
 });
 
 
+
 // 🎵 Musiques uploadées
 async function loadUserMusics() {
   const res  = await fetch(`/api/musics`, { credentials: "include" });
@@ -160,15 +161,16 @@ async function loadUserMusics() {
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button><br>
 
       <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">
-        🔗 Copier le lien
+  🔗 Copier le lien
       </button>
+
       <span class="shareMessage hidden">📋 Lien copié !</span><br>
 
       <a
-        href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/share/${music._id}"
-        target="_blank"
-        class="fbShareBtn"
-      >
+  href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/share/${music._id}"
+  target="_blank"
+  class="fbShareBtn"
+>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
           style="vertical-align: middle; margin-right: 6px;"
           viewBox="0 0 512 512" fill="white">
@@ -216,9 +218,11 @@ async function loadUserFavorites() {
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button><br>
 
-      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">
-        🔗 Copier le lien
-      </button>
+      <a
+  href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/share/${music._id}"
+  target="_blank"
+  class="fbShareBtn"
+>
       <span class="shareMessage hidden">📋 Lien copié !</span><br>
 
       <a
