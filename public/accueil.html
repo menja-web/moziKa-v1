@@ -339,7 +339,7 @@
         const isFav = favoritesSet.has(music._id);
         const li = document.createElement("li");
 
-<li.innerHTML = `
+li.innerHTML = `
   <img class="cover" src="${music.cover}" alt="Couverture" />
   <strong>${music.title}</strong>
   <small>Par ${music.uploader || 'Anonyme'}</small>
@@ -365,6 +365,7 @@
 `; 
 ul.appendChild(li);
 
+      });
 
       attachAudioHandlers();
       attachDownloadHandlers();
@@ -480,7 +481,7 @@ ul.appendChild(li);
     });
   </script>
   
-<script src="js/accueil.js"></script>
+
 
 
 </body>
