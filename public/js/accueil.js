@@ -110,25 +110,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // 🔗 Copier le lien + Facebook share
-  document.addEventListener("click", async (e) => {
-    // Copier le lien
-    if (e.target.classList.contains("shareBtn")) {
-      const url = e.target.dataset.url;
-      const msg = e.target.nextElementSibling;
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("shareBtn")) {
+    const url = e.target.dataset.url;
+    const msg = e.target.nextElementSibling;
 
-      try {
-        await navigator.clipboard.writeText(url);
-        msg.textContent = "📋 Lien copié !";
-        msg.classList.remove("hidden");
-        setTimeout(() => msg.classList.add("hidden"), 2000);
-      } catch (err) {
-        msg.textContent = "❌ Erreur copie";
-        msg.classList.remove("hidden");
-        msg.style.color = "red";
-      }
+    try {
+      await navigator.clipboard.writeText(url);
+      msg.textContent = "📋 Lien copié !";
+      msg.classList.remove("hidden");
+      setTimeout(() => msg.classList.add("hidden"), 2000);
+    } catch (err) {
+      msg.textContent = "❌ Erreur copie";
+      msg.classList.remove("hidden");
+      msg.style.color = "red";
     }
-  });
+  }
 });
+
 
 // 🎵 Musiques uploadées
 async function loadUserMusics() {

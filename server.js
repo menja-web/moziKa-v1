@@ -577,7 +577,7 @@ app.get('/api/creators', (_req, res) => {
 });
 
 // partage link
-app.get("/share/share-id", async (req, res) => {
+app.get("/share/:id", async (req, res) => {
   const music = await Music.findById(req.params.id);
   if (!music) return res.status(404).send("Not found");
 
@@ -585,15 +585,28 @@ app.get("/share/share-id", async (req, res) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <meta property="og:title" content="🎶 ${music.title} sur MoziKa" />
+      <meta property="og:title" content="🎧 ${music.title} sur MoziKa" />
       <meta property="og:description" content="Catégorie : ${music.category}" />
       <meta property="og:image" content="${music.cover}" />
       <meta property="og:url" content="https://mozika-gasy.onrender.com/share/${music._id}" />
       <meta property="og:type" content="music.song" />
     </head>
-    <body>Redirection vers MoziKa...</body>
+    <body>Redirection vers MoziKa…</body>
     <script>window.location.href = "/accueil.html";</script>
     </html>
+  `);
+});
+
+app.get("/music/:id", async (req, res) => {
+  const music = await Music.findById(req.params.id);
+  if (!music) return res.status(404).send("Musique introuvable");
+
+  // Tu peux envoyer une page HTML statique ou un rendu avec EJS, Handlebars, etc.
+  res.send(`
+    <h1>${music.title}</h1>
+    <audio src="${music.path}" controls></audio>
+    <p>Catégorie : ${music.category}</p>
+    <img src="${music.cover}" alt="Couverture" width="120"/>
   `);
 });
 
