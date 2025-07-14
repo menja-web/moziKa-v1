@@ -655,6 +655,17 @@ app.get("/music/:id", async (req, res) => {
 
 
 // ─── EXPORT & PING & HOME ─────────────────────────────────
+app.get("/download/:id", async (req, res) => {
+  const music = await Music.findById(req.params.id);
+  if (!music) return res.status(404).send("Fichier introuvable");
+
+  // 🔢 Incrémente le compteur dans MongoDB
+  music.downloadCount = (music.downloadCount || 0) + 1;
+  await music.save();
+
+  // 🔁 Redirection vers le fichier
+  res.redirect(music.path);
+});
 
 // Exporter toute la data (users, musics, tokens, creators)
 app.get('/api/export-data', async (_req, res) => {
