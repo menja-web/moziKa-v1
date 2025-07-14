@@ -160,8 +160,9 @@ async function loadUserMusics() {
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
       <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button><br>
-      <button class="shareBtn" data-url="${baseUrl}/music/${music._id}">🔗 Copier le lien</button>
-      <span class="shareMessage hidden">📋 Lien copié !</span><br><ahref="https://www.facebook.com/sharer/sharer.php?u=${baseUrl}/share/${music._id}"target="_blank" class="fbShareBtn">
+      <button class="shareBtn" data-url="${baseUrl}/share/${music._id}">🔗 Copier le lien</button>
+      <span class="shareMessage hidden">📋 Lien copié !</span>
+      <br><ahref="https://www.facebook.com/sharer/sharer.php?u=${baseUrl}/share/${music._id}"target="_blank" class="fbShareBtn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
           style="vertical-align:middle;margin-right:6px;" viewBox="0 0 512 512" fill="white">
           <path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.5 90.8 225.8 209 240v-168h-63v-72h63v-55.2
@@ -205,9 +206,7 @@ async function loadUserFavorites() {
       📥 Téléchargements : ${music.downloadCount || 0}<br>
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button><br>
-      <button class="shareBtn" data-url="${baseUrl}/music/${music._id}">
-        🔗 Copier le lien
-      </button>
+      <button class="shareBtn" data-url="${baseUrl}/share/${music._id}">🔗 Copier le lien</button>
       <span class="shareMessage hidden">📋 Lien copié !</span><br>
       <a
         href="https://www.facebook.com/sharer/sharer.php?u=${baseUrl}/share/${music._id}"
