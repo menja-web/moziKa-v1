@@ -18,6 +18,8 @@ const Music = require('./models/Music');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+app.use(express.static(path.join(__dirname, "public")));
+
 
 // ─── BODY PARSING & STATIC FILES ─────────────────────────
 app.use(express.json());
