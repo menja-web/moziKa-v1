@@ -158,17 +158,38 @@ async function loadUserMusics() {
       📥 Téléchargements : ${music.downloadCount || 0}<br>
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
       <button class="deleteBtn" data-id="${music._id}">🗑 Supprimer</button>
-      <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button>
-      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
+      <button class="addFavBtn" data-id="${music._id}">💙 Ajouter aux favoris</button><br>
+
+      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">
+        🔗 Copier le lien
+      </button>
       <span class="shareMessage hidden">📋 Lien copié !</span><br>
-      <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"
-         target="_blank"
-         class="fbShareBtn">📘 Partager sur Facebook</a>
+
+      <a
+        href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/share/${music._id}"
+        target="_blank"
+        class="fbShareBtn"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+          style="vertical-align: middle; margin-right: 6px;"
+          viewBox="0 0 512 512" fill="white">
+          <path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.5 90.8 225.8 209 240v-168h-63v-72h63v-55.2
+          c0-62.2 37-96.8 93.7-96.8 27.1 0 55.5 4.8 55.5 4.8v61h-31.2c-30.7 0-40.3 19.1-40.3 38.7V184h68.5
+          l-11 72h-57.5v168c118.2-14.2 209-116.5 209-240z"/>
+        </svg>
+        Partager sur Facebook
+      </a><br>
+
+      <div class="counters">
+        Écoute : <span class="listenCount">${music.listenCount || 0}</span> fois —
+        Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
+      </div>
       <hr>
     `;
     list.appendChild(li);
   });
 }
+
 
 // 💙 Favoris
 async function loadUserFavorites() {
@@ -190,16 +211,36 @@ async function loadUserFavorites() {
     li.innerHTML = `
       <strong>${music.title}</strong> (${music.category})<br>
       <img src="${music.cover}" alt="Couverture" width="100"/><br>
-      <audio controls controlsList="nodownload" src="${music.path}" style="width:100%;margin:10px 0;"></audio><br>
+      <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
       🎧 Écoutes : ${music.listenCount || 0}<br>
       📥 Téléchargements : ${music.downloadCount || 0}<br>
       <a class="download-link" href="${music.path}" download>📥 Télécharger</a><br>
-      <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button>
-      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">🔗 Partager</button>
+      <button class="removeFavBtn" data-id="${music._id}">❌ Retirer des favoris</button><br>
+
+      <button class="shareBtn" data-url="https://mozika-gasy.onrender.com/music/${music._id}">
+        🔗 Copier le lien
+      </button>
       <span class="shareMessage hidden">📋 Lien copié !</span><br>
-      <a href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/music/${music._id}"
-         target="_blank"
-         class="fbShareBtn">📘 Partager sur Facebook</a>
+
+      <a
+        href="https://www.facebook.com/sharer/sharer.php?u=https://mozika-gasy.onrender.com/share/${music._id}"
+        target="_blank"
+        class="fbShareBtn"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+          style="vertical-align: middle; margin-right: 6px;"
+          viewBox="0 0 512 512" fill="white">
+          <path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.5 90.8 225.8 209 240v-168h-63v-72h63v-55.2
+          c0-62.2 37-96.8 93.7-96.8 27.1 0 55.5 4.8 55.5 4.8v61h-31.2c-30.7 0-40.3 19.1-40.3 38.7V184h68.5
+          l-11 72h-57.5v168c118.2-14.2 209-116.5 209-240z"/>
+        </svg>
+        Partager sur Facebook
+      </a><br>
+
+      <div class="counters">
+        Écoute : <span class="listenCount">${music.listenCount || 0}</span> fois —
+        Téléchargement : <span class="downloadCount">${music.downloadCount || 0}</span> fois
+      </div>
       <hr>
     `;
     list.appendChild(li);
