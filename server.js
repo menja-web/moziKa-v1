@@ -654,15 +654,6 @@ app.get("/music/:id", async (req, res) => {
 });
 
 
-  // Tu peux envoyer une page HTML statique ou un rendu avec EJS, Handlebars, etc.
-  res.send(`
-    <h1>${music.title}</h1>
-    <audio src="${music.path}" controls></audio>
-    <p>Catégorie : ${music.category}</p>
-    <img src="${music.cover}" alt="Couverture" width="120"/>
-  `);
-});
-
 // ─── EXPORT & PING & HOME ─────────────────────────────────
 
 // Exporter toute la data (users, musics, tokens, creators)
