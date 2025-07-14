@@ -1,6 +1,6 @@
 // accueil.js
 
-const baseUrl = "";
+const baseUrl = window.location.origin;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const logoutLink     = document.getElementById("logoutLink");
@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const emailEl        = document.getElementById("email");
   const confirmBox     = document.getElementById("confirmBox");
   const deleteMsg      = document.getElementById("deleteMessage");
+ 
 
   let targetId     = "";
   let targetCard   = null;
