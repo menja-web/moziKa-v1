@@ -4,247 +4,226 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Accueil - MoziKa</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #f7f9fc;
-    color: #333;
-    min-height: 100vh;
-    padding-bottom: 140px;
-  }
-
-  header {
-    background: #4a90e2;
-    padding: 20px 40px;
-    color: white;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-
-  nav {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  nav a {
-    color: white;
-    text-decoration: none;
-    font-weight: 600;
-    transition: color 0.3s ease;
-  }
-  nav a:hover {
-    color: #cce4ff;
-  }
-
-  main {
-    max-width: 1000px;
-    margin: 30px auto;
-    padding: 0 20px;
-  }
-  h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-weight: 700;
-    color: #222;
-  }
-
-  #searchBar {
-    margin: 0 auto 30px auto;
-    max-width: 600px;
-    display: flex;
-    justify-content: center;
-  }
-  #searchInput {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-
-  ul#musicList {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-  }
-  ul#musicList li {
-    background: white;
-    padding: 15px 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-  }
-
-  img.cover {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-  strong {
-    font-size: 1.1rem;
-    margin-bottom: 6px;
-    color: #4a90e2;
-  }
-  small {
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 6px;
-  }
-  .meta {
-    font-size: 0.85rem;
-    color: #888;
-    margin-bottom: 10px;
-  }
-
-  audio {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  /* Favoris et Téléchargement (identiques) */
-  a.download-link,
-  button.favBtn {
-    background: #4a90e2;
-    color: white;
-    padding: 7px 14px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-decoration: none;
-    transition: background 0.3s ease;
-    border: none;
-    cursor: pointer;
-    margin: 0.5rem 0;
-    display: inline-block;
-  }
-  a.download-link:hover,
-  button.favBtn:hover {
-    background: #357abd;
-  }
-
-  .counters {
-    font-style: italic;
-    color: #555;
-    margin-top: 6px;
-    font-size: 0.9rem;
-  }
-
-  #topFixed {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: #f7f9fc;
-    border-top: 1px solid #ccc;
-    padding: 10px 20px;
-    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
-    z-index: 999;
-  }
-  #topFixed h3 {
-    margin-bottom: 8px;
-    font-size: 1rem;
-    color: #4a90e2;
-  }
-  #topFixed ul {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-    padding: 0;
-    list-style: none;
-    font-size: 0.9rem;
-    margin-bottom: 8px;
-  }
-  #topFixed ul li {
-    background: white;
-    padding: 6px 10px;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  #topFixed a {
-    background: #4a90e2;
-    color: white;
-    padding: 8px 14px;
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: bold;
-  }
-  #topFixed a:hover {
-    background: #357abd;
-  }
-
-  footer {
-    background: #121212;
-    color: #ddd;
-    padding: 30px 20px 15px;
-    font-size: 0.95rem;
-  }
-  .footer-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 30px;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-  .footer-item {
-    flex: 1;
-    min-width: 220px;
-  }
-  .footer-item h4 {
-    font-size: 1.1rem;
-    color: #4a90e2;
-    margin-bottom: 10px;
-  }
-  .footer-item p {
-    margin: 6px 0;
-    line-height: 1.4;
-  }
-  .footer-item span {
-    font-weight: bold;
-    margin-right: 6px;
-  }
-  .footer-item a {
-    color: #bbb;
-    text-decoration: none;
-  }
-  .footer-item a:hover {
-    color: #4a90e2;
-    text-decoration: underline;
-  }
-  .footer-bottom {
-    text-align: center;
-    margin-top: 30px;
-    font-size: 0.85rem;
-    color: #888;
-  }
-
-  @media screen and (max-width: 768px) {
-    .conteneur {
-      flex-direction: column;
-      padding: 10px;
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f9fc;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 140px;
     }
-    .titre {
-      font-size: 20px;
+    header {
+      background: #4a90e2;
+      padding: 20px 40px;
+      color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    nav {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    nav a:hover { color: #cce4ff; }
+    main {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    h2 {
       text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #222;
     }
-    .bouton {
+    #searchBar {
+      margin: 0 auto 30px auto;
+      max-width: 600px;
+      display: flex;
+      justify-content: center;
+    }
+    #searchInput {
       width: 100%;
-      margin: 10px 0;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-  }
-
-  /* Partage Facebook */
+    ul#musicList {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    ul#musicList li {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    img.cover {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    strong {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+      color: #4a90e2;
+    }
+    small {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    audio {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    a.download-link, button.favBtn {
+      background: #4a90e2;
+      color: white;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background 0.3s ease;
+      border: none;
+      cursor: pointer;
+      margin-top: 6px;
+      display: inline-block;
+    }
+    a.download-link:hover, button.favBtn:hover { background: #357abd; }
+    .counters {
+      font-style: italic;
+      color: #555;
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+    #topFixed {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #f7f9fc;
+      border-top: 1px solid #ccc;
+      padding: 10px 20px;
+      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+    }
+    #topFixed h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      color: #4a90e2;
+    }
+    #topFixed ul {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      padding: 0;
+      list-style: none;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    #topFixed ul li {
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    #topFixed a {
+      background: #4a90e2;
+      color: white;
+      padding: 8px 14px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    #topFixed a:hover {
+      background: #357abd;
+    }
+    footer {
+      background: #121212;
+      color: #ddd;
+      padding: 30px 20px 15px;
+      font-size: 0.95rem;
+    }
+    .footer-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 30px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .footer-item {
+      flex: 1;
+      min-width: 220px;
+    }
+    .footer-item h4 {
+      font-size: 1.1rem;
+      color: #4a90e2;
+      margin-bottom: 10px;
+    }
+    .footer-item p {
+      margin: 6px 0;
+      line-height: 1.4;
+    }
+    .footer-item span {
+      font-weight: bold;
+      margin-right: 6px;
+    }
+    .footer-item a {
+      color: #bbb;
+      text-decoration: none;
+    }
+    .footer-item a:hover {
+      color: #4a90e2;
+      text-decoration: underline;
+    }
+    .footer-bottom {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.85rem;
+      color: #888;
+    }
+    @media screen and (max-width: 768px) {
+      .conteneur {
+        flex-direction: column;
+        padding: 10px;
+      }
+      .titre {
+        font-size: 20px;
+        text-align: center;
+      }
+      .bouton {
+        width: 100%;
+        margin: 10px 0;
+      }
+    }
+      /* Partage Facebook */
   .fbShareBtn {
     display: inline-block;
     margin: 0.5rem 0;
@@ -266,14 +245,7 @@
     font-weight: bold;
     color: green;
   }
-</style>
-
-  <meta property="og:title" content="MoziKa - Écoute & Partage de musique gasy" />
-<meta property="og:description" content="Découvre les meilleurs sons gasy sur MoziKa 🎧" />
-<meta property="og:image" content="https://mozika-gasy.onrender.com/assets/moziKa-share.jpg" />
-<meta property="og:url" content="https://mozika-gasy.onrender.com" />
-<meta property="og:type" content="website" />
-
+  </style>
 </head>
 <body>
   <header>
@@ -326,7 +298,7 @@
     </div>
   </footer>
 
-  <script>
+    <script>
   const baseUrl = 'https://mozika-gasy.onrender.com';
   let currentUser = null;
   let allMusics = [];
@@ -482,7 +454,7 @@
     });
   }
 
-  // 6) Compteur et ouverture du téléchargement dans un nouvel onglet
+// 6) Compteur et déclenchement du téléchargement
   function attachDownloadHandlers() {
     document.querySelectorAll('.download-link').forEach(link => {
       link.addEventListener('click', async e => {
@@ -490,7 +462,7 @@
         const id   = link.dataset.id;
         const card = link.closest('.music-card');
 
-        // ① incrément unique via API
+        // incrément unique via API
         try {
           const res = await fetch(`${baseUrl}/api/download`, {
             method: 'POST',
@@ -502,16 +474,18 @@
           if (d.status === 'success') {
             card.querySelector('.downloadCount').textContent = d.count;
           }
-        } catch {
-          console.warn('Téléchargement : échec comptage');
+        } catch (err) {
+          console.warn('Téléchargement : échec comptage', err);
         }
 
-        // ② ouvrir le fichier dans un nouvel onglet
-        window.open(`${baseUrl}/download/${id}`, '_blank');
+        // lancer le téléchargement sans quitter la page
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = `${baseUrl}/download/${id}`;
+        document.body.appendChild(iframe);
       });
     });
   }
-
   // 7) Gestion des favoris
   function attachFavoriteHandlers() {
     document.querySelectorAll('.favBtn').forEach(btn => {
@@ -590,6 +564,5 @@
     await loadTop();
   });
 </script>
-
 </body>
 </html>
