@@ -19,42 +19,20 @@
       color: white;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-    }
-    nav {
-      display: flex;
-      gap: 20px;
-      margin-top: 10px;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-    }
+    header h1 { font-size: 2rem; font-weight: 700; }
+    nav { display: flex; gap: 20px; margin-top: 10px; }
+    nav a { color: white; text-decoration: none; font-weight: 600; }
 
     main {
       max-width: 1000px;
       margin: 30px auto;
       padding: 0 20px;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #222;
-    }
-    #searchBar {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 30px;
-    }
+    h2 { text-align: center; margin-bottom: 20px; color: #222; }
+    #searchBar { display: flex; justify-content: center; margin-bottom: 30px; }
     #searchInput {
-      width: 100%;
-      max-width: 600px;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      width: 100%; max-width: 600px;
+      padding: 10px; border-radius: 6px; border: 1px solid #ccc;
       font-size: 1rem;
     }
 
@@ -72,197 +50,131 @@
     }
 
     img.cover {
-      width: 100%;
-      height: auto;
-      border-radius: 8px;
-      margin-bottom: 10px;
+      width: 100%; height: auto;
+      border-radius: 8px; margin-bottom: 10px;
     }
     strong {
-      display: block;
-      font-size: 1.1rem;
-      color: #4a90e2;
-      margin-bottom: 4px;
+      display: block; font-size: 1.1rem;
+      color: #4a90e2; margin-bottom: 4px;
     }
     small {
-      display: block;
-      color: #666;
-      font-size: 0.9rem;
-      margin-bottom: 4px;
+      display: block; color: #666;
+      font-size: 0.9rem; margin-bottom: 4px;
     }
     .meta-date {
-      display: block;
-      color: #888;
-      font-size: 0.85rem;
-      margin-bottom: 10px;
+      display: block; color: #888;
+      font-size: 0.85rem; margin-bottom: 10px;
     }
 
     audio {
-      width: 100%;
-      margin-bottom: 10px;
+      width: 100%; margin-bottom: 10px;
     }
 
     .counters {
-      display: flex;
-      gap: 12px;
-      font-style: italic;
-      color: #555;
-      margin-bottom: 8px;
-      font-size: 0.9rem;
+      display: flex; gap: 12px;
+      font-style: italic; color: #555;
+      margin-bottom: 8px; font-size: 0.9rem;
     }
 
     .actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 12px;
+      display: flex; flex-wrap: wrap;
+      align-items: center; gap: 8px 12px;
       margin-bottom: 8px;
     }
-    .actions a,
-    .actions button {
-      display: inline-block;
-      padding: 6px 12px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      text-decoration: none;
-      border: none;
+    .actions a, .actions button {
+      padding: 6px 12px; font-size: 0.9rem;
+      font-weight: 600; border-radius: 6px;
+      cursor: pointer; text-decoration: none;
+      border: none; display: inline-block;
     }
-
-    a.download-link {
-      background: #4a90e2;
-      color: white;
+    a.download-link, button.favBtn {
+      background: #4a90e2; color: white;
     }
-    a.download-link:hover {
+    a.download-link:hover, button.favBtn:hover {
       background: #357abd;
     }
-
-    button.favBtn {
-      background: #4a90e2;
-      color: white;
-    }
-    button.favBtn:hover {
-      background: #357abd;
-    }
-
     button.shareBtn {
-      background: #6c757d;
-      color: white;
+      background: #6c757d; color: white;
     }
     button.shareBtn:hover {
       background: #5a6268;
     }
-
     .shareMessage {
-      color: green;
-      font-weight: bold;
-      display: none;
+      color: green; font-weight: bold; display: none;
     }
 
     a.fbShareBtn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: #4267B2;
-      color: white;
-      text-decoration: none;
-      border-radius: 4px;
-      padding: 6px 12px;
-      font-weight: bold;
-      transition: background 0.3s ease;
+      display: inline-flex; align-items: center;
+      gap: 6px; background: #4267B2;
+      color: white; text-decoration: none;
+      border-radius: 4px; padding: 6px 12px;
+      font-weight: bold; transition: background 0.3s ease;
     }
     a.fbShareBtn:hover {
-      background-color: #365899;
+      background: #365899;
     }
 
     #topFixed {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #f7f9fc;
-      border-top: 1px solid #ccc;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: #f7f9fc; border-top: 1px solid #ccc;
       padding: 10px 20px;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 999;
     }
     #topFixed h3 {
-      color: #4a90e2;
-      font-size: 1rem;
+      color: #4a90e2; font-size: 1rem;
       margin-bottom: 8px;
     }
     #topFixed ul {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
-      list-style: none;
-      padding: 0;
-      margin-bottom: 8px;
-      font-size: 0.9rem;
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 15px;
+      list-style: none; padding: 0;
+      margin-bottom: 8px; font-size: 0.9rem;
     }
     #topFixed ul li {
-      background: white;
-      padding: 6px 10px;
-      border-radius: 6px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: white; padding: 6px 10px;
+      border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     #topFixed a {
-      background: #4a90e2;
-      color: white;
-      padding: 8px 14px;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: bold;
+      background: #4a90e2; color: white;
+      padding: 8px 14px; text-decoration: none;
+      border-radius: 6px; font-weight: bold;
     }
     #topFixed a:hover {
       background: #357abd;
     }
 
     footer {
-      background: #121212;
-      color: #ddd;
-      padding: 30px 20px 15px;
-      font-size: 0.95rem;
+      background: #121212; color: #ddd;
+      padding: 30px 20px 15px; font-size: 0.95rem;
     }
     .footer-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 30px;
-      max-width: 1000px;
-      margin: 0 auto;
-      justify-content: space-between;
+      display: flex; flex-wrap: wrap;
+      gap: 30px; max-width: 1000px;
+      margin: 0 auto; justify-content: space-between;
     }
     .footer-item {
-      flex: 1;
-      min-width: 220px;
+      flex: 1; min-width: 220px;
     }
     .footer-item h4 {
-      font-size: 1.1rem;
-      color: #4a90e2;
+      font-size: 1.1rem; color: #4a90e2;
       margin-bottom: 10px;
     }
     .footer-item p {
-      margin: 6px 0;
-      line-height: 1.4;
+      margin: 6px 0; line-height: 1.4;
     }
     .footer-item span {
-      font-weight: bold;
-      margin-right: 6px;
+      font-weight: bold; margin-right: 6px;
     }
     .footer-item a {
-      color: #bbb;
-      text-decoration: none;
+      color: #bbb; text-decoration: none;
     }
     .footer-item a:hover {
-      color: #4a90e2;
-      text-decoration: underline;
+      color: #4a90e2; text-decoration: underline;
     }
     .footer-bottom {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 0.85rem;
-      color: #888;
+      text-align: center; margin-top: 30px;
+      font-size: 0.85rem; color: #888;
     }
   </style>
 </head>
@@ -280,9 +192,11 @@
   <main>
     <h2>Liste des musiques disponibles</h2>
     <div id="searchBar">
-      <input id="searchInput" type="text" placeholder="🔍 Rechercher par titre..." />
+      <input id="searchInput" type="text" placeholder="🔍 Rechercher par titre…" />
     </div>
-    <ul id="musicList"><li>Chargement...</li></ul>
+    <ul id="musicList">
+      <li>Chargement…</li>
+    </ul>
   </main>
 
   <div id="topFixed">
@@ -319,7 +233,6 @@
     let allMusics = [];
     let favoritesSet = new Set();
 
-    // 1) Session
     async function fetchSession() {
       try {
         const res = await fetch(`${baseUrl}/api/get-session`, { credentials: 'include' });
@@ -327,29 +240,25 @@
       } catch {}
     }
 
-    // 2) Favoris
     async function loadFavorites() {
       if (!currentUser) return;
       try {
         const res = await fetch(`${baseUrl}/api/favorites`, { credentials: 'include' });
-        if (res.ok) {
-          favoritesSet = new Set((await res.json()).favorites.map(m => m._id));
-        }
+        if (res.ok) favoritesSet = new Set((await res.json()).favorites.map(m => m._id));
       } catch {}
     }
 
-    // 3) Musiques
     async function fetchMusics() {
       try {
         const res = await fetch(`${baseUrl}/api/musics`, { credentials: 'include' });
         const { musics } = await res.json();
         allMusics = musics || [];
-        allMusics.sort((a,b) => (b.listenCount||0) - (a.listenCount||0));
+        // ← tri par nombre d'écoutes, desc
+        allMusics.sort((a,b)=> (b.listenCount||0) - (a.listenCount||0));
         renderMusics(allMusics);
       } catch {}
     }
 
-    // 4) Rendu + events
     function renderMusics(list) {
       const ul = document.getElementById('musicList');
       ul.innerHTML = '';
@@ -359,9 +268,9 @@
         li.className = 'music-card';
         li.innerHTML = `
           <img class="cover" src="${music.cover}" alt="Couverture"><br>
-          <strong>${music.title} (${music.category})</strong>
-          <small>Par ${music.uploader || 'Anonyme'}</small>
-          <span class="meta-date">${music.uploadedAt?.split('T')[0] || ''}</span>
+          <strong>${music.title} (${music.category})</strong><br>
+          <small>Par ${music.uploader||'Anonyme'}</small><br>
+          <span class="meta-date">${music.uploadedAt?.split('T')[0]||''}</span>
           <audio controls controlsList="nodownload" data-id="${music._id}"
                  src="${music.path}"></audio>
           <div class="counters">
@@ -382,8 +291,7 @@
                          37-96.8 93.7-96.8 27.1 0 55.5 4.8 55.5 4.8v61h-31.2
                          c-30.7 0-40.3 19.1-40.3 38.7V184h68.5l-11 72h-57.5
                          v168c118.2-14.2 209-116.5 209-240z"/>
-              </svg>
-              Partager sur Facebook
+              </svg>Partager sur Facebook
             </a>
           </div>
         `;
@@ -395,7 +303,6 @@
       attachShareHandlers();
     }
 
-    // 5) Écoute après 15s (unique)
     function attachAudioHandlers() {
       const timers = new WeakMap();
       document.querySelectorAll('.music-card audio').forEach(audio => {
@@ -422,14 +329,13 @@
       });
     }
 
-    // 6) Téléchargement unique + immédiat
     function attachDownloadHandlers() {
       const counted = new Set();
       document.querySelectorAll('.download-link').forEach(a=>{
-        const card = a.closest('.music-card');
         a.addEventListener('click', async e=>{
           e.preventDefault();
           const id = a.dataset.id;
+          const card = a.closest('.music-card');
           if (!counted.has(id)) {
             const res = await fetch(`${baseUrl}/api/download`, {
               method:'POST', credentials:'include',
@@ -442,19 +348,17 @@
               counted.add(id);
             }
           }
-          // true download
+          // vrai téléchargement
           const dl = document.createElement('a');
           dl.href = a.href; dl.download=''; dl.style.display='none';
-          document.body.appendChild(dl);
-          dl.click();
-          dl.remove();
+          document.body.append(dl);
+          dl.click(); dl.remove();
         });
       });
     }
 
-    // 7) Favoris
     function attachFavoriteHandlers() {
-      document.querySelectorAll('.favBtn').forEach(async btn=>{
+      document.querySelectorAll('.favBtn').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const id = btn.dataset.id;
           const action = favoritesSet.has(id)? 'remove-favorite':'add-favorite';
@@ -477,7 +381,6 @@
       });
     }
 
-    // 8) Copier lien
     function attachShareHandlers() {
       document.querySelectorAll('.shareBtn').forEach(btn=>{
         const msg = btn.nextElementSibling;
@@ -490,18 +393,16 @@
       });
     }
 
-    // 9) Recherche
     document.getElementById('searchInput')
       .addEventListener('input', e=>{
         const q = e.target.value.trim().toLowerCase();
         renderMusics(allMusics.filter(m=>m.title.toLowerCase().includes(q)));
       });
 
-    // 10) Top 5
     fetch(`${baseUrl}/api/top`)
       .then(r=>r.json())
       .then(data=>{
-        const ul = document.getElementById('topList');
+        const ul=document.getElementById('topList');
         ul.innerHTML = data.top.length
           ? data.top.map(m=>`<li>${m.title} – ${m.listenCount||0} écoutes</li>`).join('')
           : '<li>Aucun hit pour le moment.</li>';
