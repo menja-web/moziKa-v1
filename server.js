@@ -169,6 +169,9 @@ app.get('/api/get-session', (req, res) => {
   }
   res.json({ status:'success', user: req.session.user });
 });
+app.get('/api/debug-admin', (req, res) => {
+  res.json({ user: req.user || null, session: req.session || null });
+});
 
 app.get('/api/user-info', requireLogin, (req, res) => {
   res.json({
