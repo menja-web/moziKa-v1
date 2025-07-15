@@ -56,6 +56,18 @@ app.use(session({
     sameSite: 'none'      // pour permettre cross‐site
   }
 }));
+// ─── INJECTION UTILISATEUR DEPUIS LA SESSION ─────────────
+app.use(async (req, res, next) => {
+  if (req.session && req.session.userId) {
+    try {
+      const user = await User.findById(req.session.userId);
+      if (user) req.user = user;
+    } catch (err) {
+      console.error("Erreur lors de l'injection de l'utilisateur :", err);
+    }
+  }
+  next();
+});
 
 
 app.use(async (req, res, next) => {
