@@ -3,6 +3,9 @@ const express  = require('express');
 const router   = express.Router();
 const Music    = require('../models/Music');
 const isAdmin  = require('../middlewares/isAdmin'); // middleware de sécurité
+router.get('/debug', async (req, res) => {
+  res.json({ user: req.user, session: req.session });
+});
 
 // GET toutes les musiques (admin only)
 router.get('/', isAdmin, async (req, res) => {
