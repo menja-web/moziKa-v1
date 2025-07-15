@@ -68,6 +68,10 @@ app.use(async (req, res, next) => {
   }
   next();
 });
+// ─── TEST DE SESSION /WHOAMI ─────────────────────────────
+app.get('/whoami', (req, res) => {
+  res.json({ user: req.user || null });
+});
 
 // ─── AUTH MIDDLEWARE ──────────────────────────────────────
 function requireLogin(req, res, next) {
