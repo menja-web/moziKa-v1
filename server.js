@@ -1,4 +1,4 @@
-// server.js
+// ─── CONFIG ENV & PACKAGES ───────────────────────────────
 require('dotenv').config();
 
 const express    = require('express');
@@ -13,36 +13,55 @@ const crypto     = require('crypto');
 const cors       = require('cors');
 const nodemailer = require('nodemailer');
 
+// ─── MODELS ───────────────────────────────────────────────
 const User  = require('./models/User');
 const Music = require('./models/Music');
 
-const app  = express();
-app.use(cors());
-const adminStatsRoutes = require('./routes/adminStats');
+// ─── ROUTES ───────────────────────────────────────────────
+const adminRoutes       = require('./routes/admin');
+const adminStatsRoutes  = require('./routes/adminStats');
 const adminMusicsRoutes = require('./routes/adminMusics');
 
-app.use('/api/admin', adminStatsRoutes);
-app.use('/api/admin', adminMusicsRoutes);
+// ─── INITIALISATION APP ──────────────────────────────────
+const app = express();
 
+// ─── TRUST PROXY (RENDER) ────────────────────────────────
+app.set('trust proxy', 1);
 
+// ─── CORS CONFIG ─────────────────────────────────────────
+const isProd       = process.env.NODE_ENV === 'production';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://mozika-gasy.onrender.com';
 
-// ─── BODY PARSING & STATIC FILES ─────────────────────────
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
+
+// ─── SESSION CONFIG ──────────────────────────────────────
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,        // 1 jour
+    httpOnly: true,
+    secure: isProd,                     // true sur Render
+    sameSite: isProd ? 'none' : 'lax'   // none en prod, lax en local
+  }
+}));
+
+// ─── MIDDLEWARE PARSING & STATIC ─────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── CORS & SESSION CONFIG ───────────────────────────────
-const isProd       = process.env.NODE_ENV === 'production';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://mozika-gasy.onrender.com';
-
-app.set('trust proxy', 1); // nécessaire pour secure cookies sur Render
-
-app.use(cors({
-  origin:      FRONTEND_URL,
-  credentials: true,
-  methods:     ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
+// ─── ROUTES API ──────────────────────────────────────────
+app.use('/api', adminRoutes);
+app.use('/api/admin', adminStatsRoutes);
+app.use('/api/admin', adminMusicsRoutes);
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -50,11 +69,11 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
-    maxAge:   24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure:   isProd,     // true en prod (HTTPS)
-    sameSite: 'none'      // pour permettre cross‐site
-  }
+  maxAge: 24 * 60 * 60 * 1000, // 1 jour
+  httpOnly: true,
+  secure: isProd,             // true en prod (HTTPS), false en local
+  sameSite: isProd ? 'none' : 'lax' // 'none' = cross-site prod / 'lax' = local
+}
 }));
 // ─── INJECTION UTILISATEUR DEPUIS LA SESSION ─────────────
 app.use(async (req, res, next) => {
