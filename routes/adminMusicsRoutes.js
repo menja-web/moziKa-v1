@@ -8,8 +8,10 @@ router.get('/debug', async (req, res) => {
 });
 
 // GET toutes les musiques (admin only)
-router.get('/', isAdmin, async (req, res) => {
-  console.log("🛡️ Admin Check →", req.user?.username, "isAdmin =", req.user?.isAdmin);
+router.get('/', async (req, res) => {
+  if (!req.user || req.user.isAdmin !== true) {
+    return res.status(403).json({ error: "Accès refusé : admin requis." });
+  }
 
   try {
     const musics = await Music.find()
