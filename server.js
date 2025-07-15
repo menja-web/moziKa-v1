@@ -76,7 +76,7 @@ app.get('/whoami', (req, res) => {
 
 // ─── ROUTES SÉCURISÉES ADMIN ──────────────────────────────
 app.use('/api',       adminRoutes);
-app.use('/api/admin', adminStatsRoutes , require('./routes/admin')); 
+app.use('/api/admin', adminStatsRoutes );
 app.use('/api/admin', adminMusicsRoutes);
 
 // ─── AUTHENTIFICATION ROUTES ──────────────────────────────
