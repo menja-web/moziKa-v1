@@ -701,6 +701,9 @@ app.get('/', (_req, res) => {
 });
 
 // ─── DÉMARRAGE DU SERVEUR ─────────────────────────────────
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur MoziKa sur http://localhost:${PORT}`);
+  console.log(`🚀 Serveur MoziKa lancé sur le port ${PORT}`);
 });
+
