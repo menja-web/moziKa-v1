@@ -12,6 +12,19 @@
       padding: 20px;
       color: #333;
     }
+    .banner {
+      background: #dff0d8;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .banner.error {
+      background: #f2dede;
+      color: #a94442;
+    }
     h1 { text-align: center; color: #4a90e2; margin-bottom: 30px; }
     .stats {
       display: grid;
@@ -70,6 +83,7 @@
 </head>
 <body>
 
+<div id="bannerContainer"></div>
 <h1>🛠️ Tableau de bord Admin – MoziKa</h1>
 
 <div class="stats" id="statsPanel">
@@ -97,10 +111,28 @@
 </table>
 
 <script>
+  async function verifySession() {
+    const res = await fetch('/api/test-admin', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const data = await res.json();
+    const container = document.getElementById('bannerContainer');
+    if (data.user?.isAdmin) {
+      container.innerHTML = `
+        <div class="banner">👑 Connecté en tant qu'admin : ${data.user.username}</div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="banner error">⛔ Session non reconnue. Accès admin refusé.</div>
+      `;
+    }
+  }
+
   async function loadStats() {
     const res = await fetch('/api/admin/stats', {
       method: 'GET',
-      credentials: 'include' // ✅ Cookies activés
+      credentials: 'include'
     });
     if (!res.ok) return;
     const data = await res.json();
@@ -114,7 +146,7 @@
   async function loadMusics() {
     const res = await fetch('/api/admin/musics', {
       method: 'GET',
-      credentials: 'include' // ✅ Cookies activés
+      credentials: 'include'
     });
     const data = await res.json();
     const tbody = document.querySelector('#musicsTable tbody');
@@ -143,7 +175,7 @@
         if (!confirm('Confirmer la suppression ?')) return;
         const res = await fetch(`/api/admin/musics/${id}`, {
           method: 'DELETE',
-          credentials: 'include' // ✅ Cookies activés
+          credentials: 'include'
         });
         if (res.ok) loadMusics();
       });
@@ -151,6 +183,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
+    verifySession();
     loadStats();
     loadMusics();
   });
