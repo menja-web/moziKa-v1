@@ -98,7 +98,10 @@
 
 <script>
   async function loadStats() {
-    const res = await fetch('/api/admin/stats');
+    const res = await fetch('/api/admin/stats', {
+      method: 'GET',
+      credentials: 'include' // ✅ Cookies activés
+    });
     if (!res.ok) return;
     const data = await res.json();
     document.getElementById('usersActifs').textContent = data.usersActifs || 0;
@@ -109,7 +112,10 @@
   }
 
   async function loadMusics() {
-    const res = await fetch('/api/admin/musics');
+    const res = await fetch('/api/admin/musics', {
+      method: 'GET',
+      credentials: 'include' // ✅ Cookies activés
+    });
     const data = await res.json();
     const tbody = document.querySelector('#musicsTable tbody');
     if (!Array.isArray(data.musics) || data.musics.length === 0) {
@@ -123,7 +129,7 @@
       row.innerHTML = `
         <td>${m.title}</td>
         <td>${m.uploader||'Anonyme'}</td>
-        <td>${m.category}</td>
+        <td>${m.category||'—'}</td>
         <td>${(m.uploadedAt||'').split('T')[0]}</td>
         <td>${m.listenCount||0}</td>
         <td>${m.downloadCount||0}</td>
@@ -135,7 +141,10 @@
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         if (!confirm('Confirmer la suppression ?')) return;
-        const res = await fetch(`/api/admin/musics/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/admin/musics/${id}`, {
+          method: 'DELETE',
+          credentials: 'include' // ✅ Cookies activés
+        });
         if (res.ok) loadMusics();
       });
     });
