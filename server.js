@@ -17,7 +17,6 @@ const User  = require('./models/User');
 const Music = require('./models/Music');
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
 app.use(cors());
 const adminStatsRoutes = require('./routes/adminStats');
 const adminMusicsRoutes = require('./routes/adminMusics');
