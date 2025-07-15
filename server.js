@@ -65,9 +65,7 @@ app.use(async (req, res, next) => {
   next();
 });
 
-app.use('/api', adminRoutes);
-app.use('/api/admin', adminStatsRoutes);
-app.use('/api/admin', adminMusicsRoutes);
+
 // ─── TEST DE SESSION /WHOAMI ─────────────────────────────
 app.get('/whoami', (req, res) => {
   res.json({ user: req.user || null });
@@ -215,9 +213,6 @@ app.get('/api/user-info', requireLogin, (req, res) => {
   });
 });
 
-app.get('/api/test-admin', (req, res) => {
-  res.json({ user: req.user });
-});
 // ─── MUSIQUES ROUTES ──────────────────────────────────────
 
 // GET toutes les musiques
@@ -707,6 +702,12 @@ app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/api/test-admin', (req, res) => {
+  res.json({ sessionId: req.session?.userId, user: req.user });
+});
+app.use('/api', adminRoutes);
+app.use('/api/admin', adminStatsRoutes);
+app.use('/api/admin', adminMusicsRoutes);
 // ─── DÉMARRAGE DU SERVEUR ─────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
