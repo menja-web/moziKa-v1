@@ -54,15 +54,6 @@ app.use(async (req, res, next) => {
   next();
 });
 
-app.get('/api/test-admin', (req, res) => {
-  res.json({ sessionId: req.session?.userId, user: req.user });
-});
-
-// ─── TEST DE SESSION /WHOAMI ─────────────────────────────
-app.get('/whoami', (req, res) => {
-  res.json({ user: req.user || null });
-});
-
 // ─── ROUTES SÉCURISÉES ADMIN ──────────────────────────────
 app.use('/api', adminRoutes);
 app.use('/api/admin', adminStatsRoutes);
@@ -546,9 +537,6 @@ app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname,'public','index.html'));
 });
 
-app.use('/api', adminRoutes);
-app.use('/api/admin', adminStatsRoutes);
-app.use('/api/admin', adminMusicsRoutes);
 
 // ─── DÉMARRAGE DU SERVEUR ─────────────────────────────────
 const PORT = process.env.PORT || 3000;
