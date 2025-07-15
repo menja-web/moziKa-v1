@@ -2,314 +2,149 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🎛 Admin - MoziKa</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MoziKa Admin</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f7f9fc;
+      background: #f3f6fc;
+      margin: 0;
+      padding: 20px;
       color: #333;
-      padding: 0 20px 40px;
     }
-    header {
-      background: #4a90e2;
-      padding: 20px 40px;
-      color: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    header h1 { font-size: 2rem; margin-bottom: 8px; }
-    nav {
-      display: flex;
+    h1 { text-align: center; color: #4a90e2; margin-bottom: 30px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 20px;
-      flex-wrap: wrap;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    nav a:hover { color: #cce4ff; }
-
-    main {
-      max-width: 1000px;
-      margin: 30px auto;
-    }
-    h2 {
-      text-align: center;
-      color: #4a90e2;
-      margin-bottom: 20px;
-    }
-
-    .section {
       margin-bottom: 40px;
     }
-
-    .music-card, .user-card, .category-card {
+    .stat {
       background: white;
-      padding: 15px 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-
-    .music-card img {
-      max-width: 120px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-
-    .download-link, .deleteBtn, .banBtn {
-      background: #4a90e2;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      display: inline-block;
-      margin-right: 8px;
-    }
-
-    .download-link:hover, .deleteBtn:hover, .banBtn:hover {
-      background: #357abd;
-    }
-
-    .stats-box {
-      background: #ffffff;
-      border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      padding: 15px 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: space-around;
-    }
-    .stats-item {
-      flex: 1;
-      min-width: 150px;
-      font-size: 1rem;
+      padding: 20px;
       text-align: center;
-      background: #eaf3ff;
-      border-radius: 6px;
-      padding: 10px;
-      color: #2c3e50;
     }
-
-    .category-form {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+    .stat h2 {
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      color: #555;
     }
-    .category-form input {
-      flex: 1;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    .stat p {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #4a90e2;
     }
-    .category-form button {
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #eee;
+      font-size: 0.95rem;
+    }
+    th {
       background: #4a90e2;
       color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-weight: bold;
-      cursor: pointer;
+      text-align: left;
     }
-
-    .removeCatBtn {
+    tr:hover td { background: #f0f4fa; }
+    button.del {
       background: #e74c3c;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 6px;
       color: white;
-      font-weight: bold;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
       cursor: pointer;
-      margin-left: 10px;
     }
-
+    button.del:hover {
+      background: #c0392b;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🎛 Admin - MoziKa</h1>
-    <nav>
-      <a href="accueil.html">🏠 Accueil</a>
-      <a href="upload.html">🎵 Ajouter</a>
-      <a href="profil.html">👤 Mon profil</a>
-      <a href="#" onclick="logoutUser(); return false;">🚪 Déconnexion</a>
-    </nav>
-  </header>
 
-  <main>
-    <section class="section">
-      <h2>📋 Musiques uploadées</h2>
-      <ul id="adminList"></ul>
-    </section>
+<h1>🛠️ Tableau de bord Admin – MoziKa</h1>
 
-    <section class="section">
-      <h2>👥 Utilisateurs</h2>
-      <ul id="userList"></ul>
-    </section>
+<div class="stats" id="statsPanel">
+  <div class="stat"><h2>👥 Utilisateurs actifs</h2><p id="usersActifs">—</p></div>
+  <div class="stat"><h2>🧑‍🎤 Artistes</h2><p id="artistes">—</p></div>
+  <div class="stat"><h2>🎶 Musiques</h2><p id="musiques">—</p></div>
+  <div class="stat"><h2>🎧 Écoutes</h2><p id="ecoutes">—</p></div>
+  <div class="stat"><h2>📥 Téléchargements</h2><p id="downloads">—</p></div>
+</div>
 
-    <section class="section">
-      <h2>📊 Statistiques musicales</h2>
-      <div class="stats-box">
-        <div class="stats-item" id="statTotal">🎶 Total musiques: ...</div>
-        <div class="stats-item" id="statEcoutes">🎧 Écoutes totales: ...</div>
-        <div class="stats-item" id="statDownloads">📥 Téléchargements: ...</div>
-      </div>
-    </section>
+<h2>🎵 Liste des musiques</h2>
+<table id="musicsTable">
+  <thead>
+    <tr>
+      <th>Titre</th>
+      <th>Artiste</th>
+      <th>Genre</th>
+      <th>📅 Date</th>
+      <th>🎧 Écoutes</th>
+      <th>📥 Téléchargements</th>
+      <th>🗑️</th>
+    </tr>
+  </thead>
+  <tbody><tr><td colspan="7">Chargement…</td></tr></tbody>
+</table>
 
-    <section class="section">
-      <h2>🛠️ Catégories musicales</h2>
-      <div class="category-form">
-        <input type="text" id="newCategory" placeholder="Nouvelle catégorie..." />
-        <button onclick="addCategory()">Ajouter</button>
-      </div>
-      <ul id="categoryList"></ul>
-    </section>
-  </main>
+<script>
+  async function loadStats() {
+    const res = await fetch('/api/admin/stats');
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('usersActifs').textContent = data.usersActifs || 0;
+    document.getElementById('artistes').textContent = data.artistes || 0;
+    document.getElementById('musiques').textContent = data.musiques || 0;
+    document.getElementById('ecoutes').textContent = data.totalEcoutes || 0;
+    document.getElementById('downloads').textContent = data.totalTelechargements || 0;
+  }
 
-  <script>
-    
-    let user = null;
-fetch("/api/get-session")
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === "success") {
-      user = data.user;
-      if (!user.isAdmin) return window.location.href = "login.html";
-      // suite du chargement ici...
-    } else {
-      window.location.href = "login.html";
+  async function loadMusics() {
+    const res = await fetch('/api/admin/musics');
+    const data = await res.json();
+    const tbody = document.querySelector('#musicsTable tbody');
+    if (!Array.isArray(data.musics) || data.musics.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7">Aucune musique disponible.</td></tr>';
+      return;
     }
-  });
-
-
-    function logoutUser() {
-      localStorage.removeItem("moziKaUser");
-      window.location.href = "login.html";
-    }
-
-    async function loadAllMusics() {
-      const res = await fetch("/api/musics");
-      const data = await res.json();
-      const list = document.getElementById("adminList");
-      list.innerHTML = "";
-
-      data.musics.forEach(music => {
-        const li = document.createElement("li");
-        li.className = "music-card";
-        li.innerHTML = `
-          <strong>${music.title}</strong> (${music.category})<br>
-          <small>Par : ${music.uploader_name || "Inconnu"}</small><br>
-          <img src="${music.cover}" alt="Couverture" /><br>
-          <audio controls controlsList="nodownload" src="${music.path}" style="width:100%; margin:10px 0;"></audio><br>
-          🎧 ${music.listenCount || 0} écoutes • 📥 ${music.downloadCount || 0} téléchargements<br>
-          <a class="download-link" href="${music.path}" download>Télécharger</a>
-          <button class="deleteBtn" data-path="${music.path}">🗑 Supprimer</button>
-        `;
-        list.appendChild(li);
-      });
-    }
-
-    async function loadUsers() {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      const list = document.getElementById("userList");
-      list.innerHTML = "";
-
-      data.users.forEach(u => {
-        const li = document.createElement("li");
-        li.className = "user-card";
-        li.innerHTML = `
-          <strong>${u.username}</strong> — ${u.email}<br>
-          <em>${u.isAdmin ? "👑 Admin" : "🎤 Utilisateur"}</em><br>
-          <button class="banBtn" data-email="${u.email}">🚫 Supprimer</button>
-        `;
-        list.appendChild(li);
-      });
-    }
-
-    async function loadStatistics() {
-      const res = await fetch("/api/musics");
-      const data = await res.json();
-
-      let total = data.musics.length;
-      let ecoutes = data.musics.reduce((sum, m) => sum + (m.listenCount || 0), 0);
-      let downloads = data.musics.reduce((sum, m) => sum + (m.downloadCount || 0), 0);
-
-      document.getElementById("statTotal").textContent = `🎶 Total musiques: ${total}`;
-      document.getElementById("statEcoutes").textContent = `🎧 Écoutes totales: ${ecoutes}`;
-      document.getElementById("statDownloads").textContent = `📥 Téléchargements: ${downloads}`;
-    }
-
-    async function loadCategories() {
-      const res = await fetch("/api/categories");
-      const data = await res.json();
-      const list = document.getElementById("categoryList");
-      list.innerHTML = "";
-
-      data.categories.forEach(cat => {
-        const li = document.createElement("li");
-        li.className = "category-card";
-        li.innerHTML = `
-          ${cat}
-          <button class="removeCatBtn" data-cat="${cat}">🚮</button>
-        `;
-        list.appendChild(li);
-      });
-    }
-
-    async function addCategory() {
-      const input = document.getElementById("newCategory");
-      const name = input.value.trim();
-      if (!name) return;
-
-      await fetch("/api/create-category", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name })
-      });
-
-      input.value = "";
-      loadCategories();
-    }
-
-    document.addEventListener("click", function (e) {
-      if (e.target.classList.contains("deleteBtn")) {
-        const path = e.target.dataset.path;
-        e.target.closest(".music-card").remove();
-        fetch("/api/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path })
-        });
-      }
-
-      if (e.target.classList.contains("banBtn")) {
-        const email = e.target.dataset.email;
-        e.target.closest(".user-card").remove();
-        fetch("/api/delete-user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        });
-      }
-
-      if (e.target.classList.contains("removeCatBtn")) {
-        const cat = e.target.dataset.cat;
-        fetch("/api/delete-category", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: cat })
-        }).then(() => {
-          loadCategories();
-        });
-      }
+    data.musics.sort((a,b)=>(b.listenCount||0)-(a.listenCount||0));
+    tbody.innerHTML = '';
+    data.musics.forEach(m => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${m.title}</td>
+        <td>${m.uploader||'Anonyme'}</td>
+        <td>${m.category}</td>
+        <td>${(m.uploadedAt||'').split('T')[0]}</td>
+        <td>${m.listenCount||0}</td>
+        <td>${m.downloadCount||0}</td>
+        <td><button class="del" data-id="${m._id}">🗑️</button></td>
+      `;
+      tbody.appendChild(row);
     });
-  </script>
+    document.querySelectorAll('button.del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Confirmer la suppression ?')) return;
+        const res = await fetch(`/api/admin/musics/${id}`, { method: 'DELETE' });
+        if (res.ok) loadMusics();
+      });
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadStats();
+    loadMusics();
+  });
+</script>
 </body>
 </html>

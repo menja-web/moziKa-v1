@@ -18,7 +18,13 @@ const Music = require('./models/Music');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
-app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
+const adminStatsRoutes = require('./routes/adminStats');
+const adminMusicsRoutes = require('./routes/adminMusics');
+
+app.use('/api/admin', adminStatsRoutes);
+app.use('/api/admin', adminMusicsRoutes);
+
 
 
 // ─── BODY PARSING & STATIC FILES ─────────────────────────
@@ -52,6 +58,16 @@ app.use(session({
   }
 }));
 
+
+app.use(async (req, res, next) => {
+  if (req.session && req.session.userId) {
+    try {
+      const user = await User.findById(req.session.userId);
+      if (user) req.user = user;
+    } catch (e) {}
+  }
+  next();
+});
 // ─── AUTH MIDDLEWARE ──────────────────────────────────────
 function requireLogin(req, res, next) {
   if (!req.session || !req.session.userId) {
