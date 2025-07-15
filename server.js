@@ -76,7 +76,7 @@ app.get('/whoami', (req, res) => {
 
 // ─── ROUTES SÉCURISÉES ADMIN ──────────────────────────────
 app.use('/api',       adminRoutes);
-app.use('/api/admin', adminStatsRoutes);
+app.use('/api/admin', adminStatsRoutes );
 app.use('/api/admin', adminMusicsRoutes);
 
 // ─── AUTHENTIFICATION ROUTES ──────────────────────────────
@@ -168,6 +168,9 @@ app.get('/api/get-session', (req, res) => {
     return res.status(401).json({ status:'error', message:'Non connecté.' });
   }
   res.json({ status:'success', user: req.session.user });
+});
+app.get('/api/debug-admin', (req, res) => {
+  res.json({ user: req.user || null, session: req.session || null });
 });
 
 app.get('/api/user-info', requireLogin, (req, res) => {
