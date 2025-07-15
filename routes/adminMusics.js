@@ -7,6 +7,7 @@ const Music = require('../models/Music');
 router.get('/musics', isAdmin, async (req, res) => {
   try {
     const musics = await Music.find({});
+    console.log('→ Musiques trouvées :', musics.length);
     res.json({ musics });
   } catch (err) {
     res.status(500).json({ error: 'Erreur lors de la récupération des musiques.' });
