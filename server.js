@@ -463,24 +463,29 @@ app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   fs.writeFileSync(creatorsFile,JSON.stringify(creators,null,2));
   res.json({ success:true, photo:`/faces/${newName}` });
 });
-// mise à jour de mdp
-app.post('/api/password/reset-with-token', async (req, res) => {
+app.post('/api/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
+
   const tokens = JSON.parse(fs.readFileSync(resetFile));
   const entry = tokens.find(t => t.token === token && t.expiresAt > Date.now());
-  if (!entry) return res.status(400).json({ status:'error', message:'Token invalide ou expiré.' });
+
+  if (!entry) {
+    return res.status(400).json({ status: 'error', message: 'Lien expiré ou invalide.' });
+  }
 
   const user = await User.findOne({ email: entry.email });
-  if (!user) return res.status(404).json({ status:'error', message:'Utilisateur introuvable.' });
+  if (!user) {
+    return res.status(404).json({ status: 'error', message: 'Utilisateur introuvable.' });
+  }
 
   user.password = await bcrypt.hash(newPassword, 10);
   await user.save();
 
   // Supprimer le token utilisé
-  const updated = tokens.filter(t => t.token !== token);
-  fs.writeFileSync(resetFile, JSON.stringify(updated, null, 2));
+  const updatedTokens = tokens.filter(t => t.token !== token);
+  fs.writeFileSync(resetFile, JSON.stringify(updatedTokens, null, 2));
 
-  res.json({ status:'success', message:'Mot de passe réinitialisé.' });
+  res.json({ status: 'success', message: 'Mot de passe mis à jour.' });
 });
 
 // Lister les créateurs
