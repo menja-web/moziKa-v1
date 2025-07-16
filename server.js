@@ -463,6 +463,25 @@ app.post('/api/update-photo', photoUpload.single('photo'), (req, res) => {
   fs.writeFileSync(creatorsFile,JSON.stringify(creators,null,2));
   res.json({ success:true, photo:`/faces/${newName}` });
 });
+// mise à jour de mdp
+app.post('/api/password/reset-with-token', async (req, res) => {
+  const { token, newPassword } = req.body;
+  const tokens = JSON.parse(fs.readFileSync(resetFile));
+  const entry = tokens.find(t => t.token === token && t.expiresAt > Date.now());
+  if (!entry) return res.status(400).json({ status:'error', message:'Token invalide ou expiré.' });
+
+  const user = await User.findOne({ email: entry.email });
+  if (!user) return res.status(404).json({ status:'error', message:'Utilisateur introuvable.' });
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  // Supprimer le token utilisé
+  const updated = tokens.filter(t => t.token !== token);
+  fs.writeFileSync(resetFile, JSON.stringify(updated, null, 2));
+
+  res.json({ status:'success', message:'Mot de passe réinitialisé.' });
+});
 
 // Lister les créateurs
 app.get('/api/creators', (_req, res) => {
