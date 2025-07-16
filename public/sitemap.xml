@@ -1,23 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- 🌐 Pages principales -->
   <url>
     <loc>https://mozika-gasy.onrender.com/</loc>
     <priority>1.0</priority>
     <changefreq>daily</changefreq>
   </url>
+
   <url>
     <loc>https://mozika-gasy.onrender.com/accueil.html</loc>
     <priority>0.9</priority>
     <changefreq>daily</changefreq>
   </url>
+
+  <!-- 🎧 Pages de partage des musiques -->
   <url>
-    <loc>https://mozika-gasy.onrender.com/music/:id</loc>
+    <loc>https://mozika-gasy.onrender.com/share/6873c882da78d036dd3d90ac</loc>
     <priority>0.8</priority>
     <changefreq>weekly</changefreq>
   </url>
+
   <url>
-    <loc>https://mozika-gasy.onrender.com/share/:id</loc>
-    <priority>0.7</priority>
+    <loc>https://mozika-gasy.onrender.com/share/6873c94ada78d036dd3d90bc</loc>
+    <priority>0.8</priority>
     <changefreq>weekly</changefreq>
   </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/6873c99eda78d036dd3d90c4</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/6873ca43da78d036dd3d90d4</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/6873e9939751668272294fac</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/68763209c3d2933e801f191c</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/6873c8dbda78d036dd3d90b4</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/6873c9feda78d036dd3d90cc</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://mozika-gasy.onrender.com/share/68767775520934f31841279c</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
 </urlset>
