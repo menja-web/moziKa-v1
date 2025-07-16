@@ -569,6 +569,11 @@ app.get('/api/ping', (_req, res) => res.json({ pong:true }));
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname,'public','index.html'));
 });
+app.get('/sitemap.xml', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'), {
+    headers: { 'Content-Type': 'application/xml' }
+  });
+});
 
 // ─── DÉMARRAGE DU SERVEUR ─────────────────────────────────
 const PORT = process.env.PORT || 3000;
